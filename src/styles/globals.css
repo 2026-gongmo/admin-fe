@@ -724,3 +724,51 @@ button { font-family: inherit; cursor: pointer; }
   .search-input { min-width: 100%; }
   .check-grid, .attach-grid { grid-template-columns: 1fr; }
 }
+
+@media (max-width: 640px) {
+  .app-shell { display: block; }
+  .sidebar {
+    position: static; height: auto;
+    border-right: 0; border-bottom: 1px solid var(--line);
+  }
+  .sb-section, .sb-foot { display: none; }
+  .sidebar nav {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+  }
+  .sb-item {
+    min-width: 0; margin-bottom: 0;
+    padding: 8px 9px; font-size: 12px;
+  }
+  .sb-item .count { display: none; }
+  .topbar { padding: 10px 14px; }
+  .topbar .spacer { display: none; }
+  .page { padding: 18px 14px; }
+  .page-h {
+    align-items: stretch; flex-direction: column;
+  }
+  .page-h h1 { font-size: 19px; line-height: 1.3; }
+  .row-flex { flex-wrap: wrap; }
+  .h-btn, .export-btn { max-width: 100%; justify-content: center; }
+  .kpis, .workflow-steps { grid-template-columns: 1fr; }
+  .panel, .detail, .report-doc, .aside-card, .story-card { padding: 14px; }
+  .report-doc { border-radius: 10px; }
+  .rep-list .ri {
+    grid-template-columns: 22px 1fr;
+  }
+  .rep-list .ri .c { grid-column: 2; }
+  .request-preview { padding: 13px; }
+  .settings-list > div {
+    align-items: flex-start; flex-direction: column;
+  }
+  .settings-list b { text-align: left; }
+  .draft-body, .decision-card > div, .public-link-row {
+    grid-template-columns: 1fr;
+  }
+  .summary-banner {
+    align-items: flex-start; flex-direction: column;
+    padding: 16px;
+  }
+  .toast {
+    left: 14px; right: 14px; bottom: 14px;
+  }
+}
