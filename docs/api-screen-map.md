@@ -69,3 +69,14 @@
 - `selected` query는 서버에 꼭 보낼 필요가 없습니다. 상세 패널에서 선택할 id를 프론트가 기억하기 위한 값입니다.
 - 실제 저장 API를 붙이기 전까지는 화면 문구에서 `Mock`, `백엔드 붙여야 함`을 유지해야 합니다.
 - 장애 관련 민감정보, 위치정보, 관리자 감사 로그는 백엔드 보안 설계 이후 연결해야 합니다.
+
+## 23차 환경변수 후보
+
+실제 API 연결 전까지 `.env.example`만 제공합니다.
+
+| 환경변수 | 목적 | 현재 기본 |
+|---|---|---|
+| `VITE_API_BASE_URL` | Spring Boot API base URL | 비워둠 |
+| `VITE_API_MODE` | `mock`/`http` 전환 후보 | `mock` |
+
+아직 `src/services/api.ts`는 이 값을 읽지 않습니다. 실제 HTTP client를 붙이는 차수에서만 사용해야 합니다.

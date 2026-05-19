@@ -41,6 +41,12 @@ const STEPS = [
     status: "Mock 데이터",
   },
   {
+    title: "권한 없음 상태 확인",
+    route: "/access-denied",
+    point: "역할 기반 인가가 붙었을 때 제한 화면이 어떻게 보이는지 설명합니다.",
+    status: "백엔드 붙여야 함",
+  },
+  {
     title: "백엔드 연동 준비 상태 확인",
     route: "/settings",
     point: "화면별 API 매핑표, Spring Boot 구현 체크리스트, 로딩/에러/빈 상태 설계를 보여줍니다.",

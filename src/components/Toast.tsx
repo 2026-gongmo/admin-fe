@@ -1,7 +1,11 @@
 import React from "react";
+import type { ToastTone } from "../App";
 
-export const Toast: React.FC<{ message: string }> = ({ message }) => (
-  <div className="toast" role="status" aria-live="polite">
+export const Toast: React.FC<{ message: string; tone?: ToastTone }> = ({
+  message,
+  tone = "info",
+}) => (
+  <div className={`toast ${tone}`} role="status" aria-live="polite">
     {message}
   </div>
 );

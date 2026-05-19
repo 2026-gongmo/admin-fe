@@ -426,6 +426,9 @@ button { font-family: inherit; cursor: pointer; }
   z-index: 100;
   animation: toastIn .2s ease;
 }
+.toast.success { background: #15803D; }
+.toast.warning { background: #92400E; }
+.toast.error { background: #B91C1C; }
 @keyframes toastIn { from { transform: translateY(8px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
 
 /* Report doc */
@@ -729,6 +732,15 @@ button { font-family: inherit; cursor: pointer; }
   background: #F8FAFC; border: 1px solid var(--line-soft);
   border-radius: 10px; padding: 12px;
 }
+.role-preview-card {
+  background: #F8FAFC; border: 1px solid var(--line-soft);
+  border-radius: 10px; padding: 12px; margin-bottom: 12px;
+  display: grid; grid-template-columns: 0.8fr 1fr 1fr; gap: 12px;
+}
+.role-preview-card b { display: block; font-size: 13.5px; margin-top: 2px; }
+.role-preview-card p {
+  margin: 0; color: #374151; font-size: 12.5px; line-height: 1.5;
+}
 .role-name { font-size: 13.5px; font-weight: 800; margin-bottom: 8px; }
 .role-text { font-size: 12.5px; line-height: 1.5; color: #374151; }
 .privacy-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
@@ -835,7 +847,7 @@ button { font-family: inherit; cursor: pointer; }
   .settings-grid .panel:last-child { grid-column: auto; }
   .demo-grid { grid-template-columns: 1fr; }
   .eval-row, .backend-todo-item { grid-template-columns: 1fr; }
-  .api-map-row, .backend-check-grid, .state-sample-grid, .role-grid, .privacy-grid, .privacy-compare { grid-template-columns: 1fr; }
+  .api-map-row, .backend-check-grid, .state-sample-grid, .role-grid, .role-preview-card, .privacy-grid, .privacy-compare { grid-template-columns: 1fr; }
   .demo-step { grid-template-columns: 34px 1fr; }
   .demo-step .row-flex { grid-column: 2; }
   .toolbar { align-items: stretch; }

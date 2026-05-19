@@ -75,3 +75,22 @@
 3. `GET /api/admin/reports`를 먼저 붙여 Mock 목록을 실제 API 응답으로 교체
 4. 제보 상태 변경 `PATCH` 구현
 5. 도움 요청, 경험 피드, 워크플로우 순서로 확장
+
+## 23차~25차 추가 확인
+
+| 차수 | 추가 내용 |
+|---:|---|
+| 23차 | `.env.example`, Toast 타입, NotFound/권한 없음 페이지 추가 |
+| 24차 | 제보 표 정렬 UI, 권한별 미리보기 토글 추가 |
+| 25차 | README 스크린샷/환경변수/포트폴리오 설명 보강 |
+
+## 환경변수
+
+현재는 `.env.example`만 제공합니다. 실제 `.env`는 만들지 않았습니다.
+
+```text
+VITE_API_BASE_URL=
+VITE_API_MODE=mock
+```
+
+백엔드 연결 전까지 `VITE_API_MODE=mock`을 유지하는 것을 권장합니다.

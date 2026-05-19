@@ -37,6 +37,22 @@ const URGENCIES: { key: Urgency; label: string }[] = [
   { key: "low", label: "낮음" },
 ];
 
+type SortKey = "createdAt" | "reportCount" | "empathyCount" | "urgency";
+type SortDirection = "asc" | "desc";
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: "createdAt", label: "등록일" },
+  { key: "reportCount", label: "제보 수" },
+  { key: "empathyCount", label: "공감 수" },
+  { key: "urgency", label: "긴급도" },
+];
+
+const URGENCY_WEIGHT: Record<Urgency, number> = {
+  high: 3,
+  mid: 2,
+  low: 1,
+};
+
 const PROCESS_REASONS = [
   "현장 확인 완료",
   "시설팀 전달 완료",
@@ -94,6 +110,8 @@ export const ReportsPage: React.FC = () => {
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
   const [isLoading, setIsLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
+  const [sortKey, setSortKey] = useState<SortKey>("reportCount");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [processMemo, setProcessMemo] = useState("");
   const [processReason, setProcessReason] = useState(PROCESS_REASONS[0]);
   const [department, setDepartment] = useState(DEPARTMENTS[0]);
@@ -136,7 +154,7 @@ export const ReportsPage: React.FC = () => {
   const filtered = useMemo(
     () => {
       const normalized = query.trim().toLowerCase();
-      return reports.filter((r) => {
+      const rows = reports.filter((r) => {
         const statusMatched = filterStatus === "all" || r.status === filterStatus;
         const queryMatched =
           normalized.length === 0 ||
@@ -146,8 +164,14 @@ export const ReportsPage: React.FC = () => {
             .includes(normalized);
         return statusMatched && queryMatched;
       });
+      return [...rows].sort((a, b) => {
+        const left = sortValue(a, sortKey);
+        const right = sortValue(b, sortKey);
+        const result = left > right ? 1 : left < right ? -1 : 0;
+        return sortDirection === "asc" ? result : -result;
+      });
     },
-    [reports, filterStatus, query]
+    [filterStatus, query, reports, sortDirection, sortKey]
   );
 
   const selectedComparison = useMemo(
@@ -278,6 +302,27 @@ export const ReportsPage: React.FC = () => {
           <span className="small-muted">
             검색 결과 {filtered.length}건 · 실제 서버 검색은 백엔드 붙여야 함
           </span>
+          <label className="filter select-filter">
+            <span>정렬</span>
+            <select
+              value={sortKey}
+              onChange={(e) => setSortKey(e.target.value as SortKey)}
+            >
+              {SORT_OPTIONS.map((option) => (
+                <option key={option.key} value={option.key}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            className="h-btn"
+            onClick={() =>
+              setSortDirection((current) => (current === "desc" ? "asc" : "desc"))
+            }
+          >
+            {sortDirection === "desc" ? "내림차순" : "오름차순"}
+          </button>
         </div>
 
         <div
@@ -689,6 +734,13 @@ function statusFromParam(value: string | null): ReportStatus | "all" {
   return ["received", "checking", "scheduled", "resolved"].includes(value ?? "")
     ? (value as ReportStatus)
     : "all";
+}
+
+function sortValue(report: AccessibilityReport, key: SortKey): string | number {
+  if (key === "createdAt") return report.createdAt;
+  if (key === "reportCount") return report.reportCount;
+  if (key === "empathyCount") return report.empathyCount;
+  return URGENCY_WEIGHT[report.urgency];
 }
 
 function urgencyLabel(urgency: Urgency): string {

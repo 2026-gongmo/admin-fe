@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { Topbar } from "../components/Topbar";
 import { ToastContext } from "../App";
 
@@ -164,6 +164,8 @@ const STATE_SAMPLES = [
 
 export const SettingsPage: React.FC = () => {
   const { showToast } = useContext(ToastContext);
+  const [previewRole, setPreviewRole] = useState(ROLE_POLICIES[0].role);
+  const currentPolicy = ROLE_POLICIES.find((item) => item.role === previewRole) ?? ROLE_POLICIES[0];
 
   return (
     <>
@@ -370,6 +372,34 @@ export const SettingsPage: React.FC = () => {
             <div className="panel-h">
               <h3>역할별 접근 정책</h3>
               <span className="mock-pill">Mock 권한표</span>
+            </div>
+            <div className="seg-control" style={{ marginBottom: 12 }}>
+              {ROLE_POLICIES.map((item) => (
+                <button
+                  key={item.role}
+                  className={previewRole === item.role ? "on" : ""}
+                  onClick={() => {
+                    setPreviewRole(item.role);
+                    showToast(`${item.role} 권한 미리보기입니다. 실제 인가는 백엔드 붙여야 함.`, "warning");
+                  }}
+                >
+                  {item.role}
+                </button>
+              ))}
+            </div>
+            <div className="role-preview-card">
+              <div>
+                <span className="field-l">현재 미리보기 역할</span>
+                <b>{currentPolicy.role}</b>
+              </div>
+              <div>
+                <span className="field-l">허용</span>
+                <p>{currentPolicy.access}</p>
+              </div>
+              <div>
+                <span className="field-l">제한</span>
+                <p>{currentPolicy.limit}</p>
+              </div>
             </div>
             <div className="role-grid">
               {ROLE_POLICIES.map((item) => (

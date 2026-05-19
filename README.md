@@ -26,6 +26,16 @@ ONDA 관리자 웹은 장애대학생의 접근성 제보, 도움 요청, 경험
 | Styling | CSS |
 | Backend 예정 | Spring Boot, JPA, PostgreSQL 또는 MySQL |
 
+## 화면 미리보기
+
+| 대시보드 | 접근성 제보 상세 |
+|---|---|
+| ![dashboard](docs/screenshots/dashboard.png) | ![reports](docs/screenshots/reports-selected.png) |
+
+| 도움 요청 | 개선 워크플로우 |
+|---|---|
+| ![help request](docs/screenshots/help-request-selected.png) | ![workflow](docs/screenshots/workflow.png) |
+
 ## 주요 화면
 
 | 경로 | 설명 |
@@ -59,6 +69,25 @@ http://127.0.0.1:5173/#/dashboard
 ```bash
 npm run build
 ```
+
+## 환경변수
+
+현재는 실제 API를 연결하지 않았기 때문에 `.env`는 필요하지 않습니다. 백엔드 연결 단계에서만 `.env.example`을 기준으로 설정합니다.
+
+```text
+VITE_API_BASE_URL=
+VITE_API_MODE=mock
+```
+
+주의: 실제 `.env`, API Key, Token은 GitHub에 올리지 않습니다.
+
+## 구현 포인트
+
+- `src/services/api.ts`를 데이터 접근 경계로 두어 Mock에서 Spring Boot API로 교체하기 쉽게 구성했습니다.
+- 제보, 도움 요청, 경험 피드, 워크플로우 화면은 URL query로 검색/필터/상세 선택 상태를 재현할 수 있습니다.
+- 위험 작업 전 `ConfirmModal`을 표시해 운영 화면의 실수 방지 흐름을 반영했습니다.
+- `PageState`, `OperationalStatus`, Toast tone을 통해 로딩/빈 상태/Mock 동기화/성공·경고·에러 알림을 준비했습니다.
+- 설정 화면에서 역할별 권한 미리보기와 권한 제한 액션 샘플을 제공하되, 실제 인가는 백엔드 추가 필요로 명확히 표시했습니다.
 
 ## 발표 시연 흐름
 
@@ -144,6 +173,9 @@ Spring Boot API -> src/services/api.ts -> src/pages/*
 | 20차 | 화면별 API endpoint 매핑 최종 문서화 |
 | 21차 | 백엔드 연결 전 프론트 인계 문서 작성 |
 | 22차 | 발표자료용 시연 캡처/설명 문서 정리 |
+| 23차 | `.env.example`, Toast 타입, NotFound/권한 없음 페이지 추가 |
+| 24차 | 제보 표 정렬 UI, 권한별 미리보기 토글 추가 |
+| 25차 | README 스크린샷, 환경변수, 구현 포인트 보강 |
 
 ## 업로드 전 주의사항
 
