@@ -7,6 +7,7 @@ import { VisibilityBadge } from "../components/StatusBadge";
 import { ToastContext } from "../App";
 import { OperationalStatus } from "../components/OperationalStatus";
 import { PageState } from "../components/PageState";
+import { ActionTimeline, type ActionTimelineItem } from "../components/ActionTimeline";
 
 const PRIVACY_REVIEWS: Record<
   string,
@@ -245,6 +246,17 @@ export const StoriesPage: React.FC = () => {
                   </div>
                 </div>
 
+                <div className="privacy-review-box">
+                  <div className="privacy-review-head">
+                    <div>
+                      <div className="field-l">검수/공개 처리 이력</div>
+                      <b>AI 익명화와 관리자 검수 로그 Mock</b>
+                    </div>
+                    <span className="backend-needed">검수 로그 저장은 백엔드 붙여야 함</span>
+                  </div>
+                  <ActionTimeline items={storyHistory(s)} compact />
+                </div>
+
                 <div className="acts">
                   <button
                     className="h-btn"
@@ -306,3 +318,62 @@ export const StoriesPage: React.FC = () => {
     </>
   );
 };
+
+function storyHistory(story: Story): ActionTimelineItem[] {
+  const items: ActionTimelineItem[] = [
+    {
+      time: story.createdAt,
+      actor: story.authorNickname,
+      action: "경험 글 등록",
+      note: "원문 저장과 공개본 분리 저장은 백엔드 붙여야 함.",
+    },
+    {
+      time: "AI 검수",
+      actor: "ONDA AI",
+      action:
+        story.aiReview?.anonymized === "완료"
+          ? "익명화 완료"
+          : story.aiReview?.anonymized === "보류"
+          ? "익명화 보류"
+          : "익명화 검수 필요",
+      note: story.aiReview?.note ?? "AI 검수 결과 저장은 백엔드 붙여야 함.",
+      tone: story.aiReview?.anonymized === "완료" ? "success" : "warning",
+    },
+  ];
+  if (story.visibility === "private") {
+    return [
+      ...items,
+      {
+        time: "관리자",
+        actor: "장애학생지원센터",
+        action: "비공개 전환",
+        note: "비공개 사유, 승인자, 처리 시간 저장은 백엔드 붙여야 함.",
+        tone: "danger",
+      },
+    ];
+  }
+  if (story.visibility === "center_only") {
+    return [
+      ...items,
+      {
+        time: "관리자",
+        actor: "장애학생지원센터",
+        action: "센터 전용 검토",
+        note: "공개 전 추가 확인이 필요한 상태입니다.",
+        tone: "warning",
+      },
+    ];
+  }
+  return [
+    ...items,
+    {
+      time: "공개",
+      actor: "관리자",
+      action: "피드 공개 유지",
+      note: story.aiReview?.reportReady
+        ? "리포트 근거로 반영 가능한 상태입니다."
+        : "리포트 반영 전 관리자 추가 검수가 필요합니다.",
+      tone: story.aiReview?.reportReady ? "success" : "warning",
+    },
+  ];
+}

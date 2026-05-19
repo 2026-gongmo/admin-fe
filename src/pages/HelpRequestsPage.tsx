@@ -9,6 +9,7 @@ import { ConfirmModal } from "../components/ConfirmModal";
 import { OperationalStatus } from "../components/OperationalStatus";
 import { PageState } from "../components/PageState";
 import { SkeletonTable } from "../components/SkeletonTable";
+import { ActionTimeline, type ActionTimelineItem } from "../components/ActionTimeline";
 
 const FILTERS: { key: HelpRequestStatus | "all"; label: string }[] = [
   { key: "all", label: "전체" },
@@ -438,13 +439,7 @@ export const HelpRequestsPage: React.FC = () => {
 
                 <div>
                   <div className="field-l">관리자 처리 이력</div>
-                  <div className="timeline">
-                    {(selected.history ?? ["처리 이력은 백엔드 붙여야 함"]).map((item) => (
-                      <div className="timeline-item" key={item}>
-                        {item}
-                      </div>
-                    ))}
-                  </div>
+                  <ActionTimeline items={helpHistory(selected)} />
                 </div>
               </>
             ) : (
@@ -497,4 +492,67 @@ function helpSortValue(item: HelpRequest, key: HelpSortKey): string | number {
   if (key === "responderCount") return item.responderCount;
   if (key === "location") return item.location;
   return item.createdAt;
+}
+
+function helpHistory(item: HelpRequest): ActionTimelineItem[] {
+  const base: ActionTimelineItem[] = [
+    {
+      time: item.createdAt,
+      actor: "시스템",
+      action: "도움 요청 접수",
+      note: `${item.location}에서 "${item.type}" 요청이 생성되었습니다.`,
+    },
+  ];
+  if (item.status === "requesting") {
+    return [
+      ...base,
+      {
+        time: "진행 중",
+        actor: "근처 도움 가능 학생",
+        action: "응답 대기",
+        note: `${item.responderCount}명에게 알림을 보낸 상태입니다. 실시간 알림은 백엔드 붙여야 함.`,
+        tone: "warning",
+      },
+      {
+        time: "센터",
+        actor: "장애학생지원센터",
+        action: "모니터링 유지",
+        note: "미응답 시간이 길어지면 센터 확인 필요 상태로 전환합니다.",
+      },
+    ];
+  }
+  if (item.status === "responded") {
+    return [
+      ...base,
+      {
+        time: item.avgResponseTime ?? "응답 완료",
+        actor: "응답 학생",
+        action: "도움 응답 완료",
+        note: "응답자 배정, 이동 완료 확인, 평균 응답 시간 저장은 백엔드 붙여야 함.",
+        tone: "success",
+      },
+    ];
+  }
+  if (item.status === "center_check") {
+    return [
+      ...base,
+      {
+        time: "확인 필요",
+        actor: "장애학생지원센터",
+        action: "센터 직접 확인으로 전환",
+        note: item.centerDecision ?? "응답자 없음. 센터 직접 확인 필요.",
+        tone: "danger",
+      },
+    ];
+  }
+  return [
+    ...base,
+    {
+      time: "취소",
+      actor: "요청자",
+      action: "도움 요청 취소",
+      note: "취소 사유와 안전 확인 저장은 백엔드 붙여야 함.",
+      tone: "warning",
+    },
+  ];
 }

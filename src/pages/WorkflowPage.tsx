@@ -11,6 +11,7 @@ import { ConfirmModal } from "../components/ConfirmModal";
 import { OperationalStatus } from "../components/OperationalStatus";
 import { PageState } from "../components/PageState";
 import { SkeletonTable } from "../components/SkeletonTable";
+import { ActionTimeline, type ActionTimelineItem } from "../components/ActionTimeline";
 
 const STAGES: { key: WorkflowStage; label: string; desc: string }[] = [
   { key: "reported", label: "제보 접수", desc: "학생 제보와 공감이 모임" },
@@ -383,6 +384,11 @@ export const WorkflowPage: React.FC = () => {
                     연결되면 됩니다.
                   </div>
                 </div>
+
+                <div>
+                  <div className="field-l">워크플로우 처리 이력</div>
+                  <ActionTimeline items={workflowHistory(selected)} />
+                </div>
               </>
             ) : (
               <div className="small-muted">개선 과제를 선택해 주세요.</div>
@@ -447,4 +453,72 @@ function workflowStageFromParam(value: string | null): WorkflowStage | "all" {
 function workflowSortValue(task: ImprovementTask, key: WorkflowSortKey): string | number {
   if (key === "stage") return STAGE_WEIGHT[task.stage];
   return task[key];
+}
+
+function workflowHistory(task: ImprovementTask): ActionTimelineItem[] {
+  const items: ActionTimelineItem[] = [
+    {
+      time: "제보 집계",
+      actor: "ONDA",
+      action: "개선 과제 생성",
+      note: `${task.evidence} 근거로 개선 과제 후보가 생성되었습니다.`,
+    },
+  ];
+  if (task.stage === "reported") {
+    return [
+      ...items,
+      {
+        time: "대기",
+        actor: "장애학생지원센터",
+        action: "센터 검토 대기",
+        note: "중복 제보, 위험도, 공공데이터 비교 확인이 필요합니다.",
+        tone: "warning",
+      },
+    ];
+  }
+  if (task.stage === "reviewing") {
+    return [
+      ...items,
+      {
+        time: "검토 중",
+        actor: task.owner,
+        action: "개선 근거 검토",
+        note: "시설팀 전달 전 개선 요청서 초안과 첨부 근거를 정리합니다.",
+        tone: "warning",
+      },
+    ];
+  }
+  if (task.stage === "sent_to_facility") {
+    return [
+      ...items,
+      {
+        time: "전달",
+        actor: task.owner,
+        action: "담당 부서 전달",
+        note: "부서 전달 이력, 공문 번호, 회신 기한 저장은 백엔드 붙여야 함.",
+      },
+    ];
+  }
+  if (task.stage === "scheduled") {
+    return [
+      ...items,
+      {
+        time: task.dueDate,
+        actor: task.owner,
+        action: "조치 예정 등록",
+        note: task.nextAction,
+        tone: "success",
+      },
+    ];
+  }
+  return [
+    ...items,
+    {
+      time: "완료",
+      actor: task.owner,
+      action: "해결 처리",
+      note: "현장 확인, 당사자 안내, 재점검 예약 저장은 백엔드 붙여야 함.",
+      tone: "success",
+    },
+  ];
 }

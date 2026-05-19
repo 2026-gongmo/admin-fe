@@ -22,6 +22,7 @@ import { ConfirmModal } from "../components/ConfirmModal";
 import { OperationalStatus } from "../components/OperationalStatus";
 import { PageState } from "../components/PageState";
 import { SkeletonTable } from "../components/SkeletonTable";
+import { ActionTimeline, type ActionTimelineItem } from "../components/ActionTimeline";
 
 const STATUSES: { key: ReportStatus | "all"; label: string }[] = [
   { key: "all", label: "전체" },
@@ -730,13 +731,7 @@ export const ReportsPage: React.FC = () => {
 
                 <div>
                   <div className="field-l">관리자 처리 이력</div>
-                  <div className="timeline">
-                    {reportHistory(selected).map((item) => (
-                      <div className="timeline-item" key={item}>
-                        {item}
-                      </div>
-                    ))}
-                  </div>
+                  <ActionTimeline items={reportHistory(selected)} />
                 </div>
 
                 <div className="field-l" style={{ marginTop: 6 }}>
@@ -835,21 +830,77 @@ function draftAction(report: AccessibilityReport): string {
   return "현장 확인, 단기 안내 조치, 중장기 시설 개선 검토";
 }
 
-function reportHistory(report: AccessibilityReport): string[] {
-  const base = [`${report.createdAt} 제보 접수`];
+function reportHistory(report: AccessibilityReport): ActionTimelineItem[] {
+  const base: ActionTimelineItem[] = [
+    {
+      time: report.createdAt,
+      actor: "시스템",
+      action: "제보 접수",
+      note: `${report.buildingName} ${report.problemType} 제보가 접수되었습니다.`,
+    },
+  ];
   if (report.status === "received") {
-    return [...base, "센터 검토 대기", "담당자 배정은 백엔드 붙여야 함"];
+    return [
+      ...base,
+      {
+        time: "대기 중",
+        actor: "장애학생지원센터",
+        action: "센터 검토 대기",
+        note: "담당자 배정과 검토 시작 저장은 백엔드 붙여야 함.",
+        tone: "warning",
+      },
+    ];
   }
   if (report.status === "checking") {
     return [
       ...base,
-      "센터 검토 시작",
-      `${report.assignee ?? "담당자"} 확인 중`,
-      "시설팀 전달 전 근거 정리",
+      {
+        time: "검토 중",
+        actor: report.assignee ?? "담당자 미배정",
+        action: "센터 검토 시작",
+        note: "반복 제보 수, 공감 수, 공공데이터 비교 결과를 확인 중입니다.",
+        tone: "warning",
+      },
+      {
+        time: "다음",
+        actor: "시설관리팀",
+        action: "시설팀 전달 전 근거 정리",
+        note: "개선 요청서 초안과 첨부파일 저장은 백엔드 붙여야 함.",
+      },
     ];
   }
   if (report.status === "scheduled") {
-    return [...base, "시설관리팀 전달", "조치 예정 등록", "리포트 반영 가능"];
+    return [
+      ...base,
+      {
+        time: "전달 완료",
+        actor: "시설관리팀",
+        action: "조치 예정 등록",
+        note: "시설팀 전달과 예정일 저장은 실제 API 연결 후 반영됩니다.",
+        tone: "success",
+      },
+      {
+        time: "리포트",
+        actor: "관리자",
+        action: "월간 리포트 반영 가능",
+        note: "리포트 스냅샷 생성은 백엔드 붙여야 함.",
+      },
+    ];
   }
-  return [...base, "조치 완료", "현장 재확인 필요", "2주 후 재점검 예정"];
+  return [
+    ...base,
+    {
+      time: "완료",
+      actor: "시설관리팀",
+      action: "조치 완료",
+      note: "현장 재확인과 당사자 안내 이력 저장은 백엔드 붙여야 함.",
+      tone: "success",
+    },
+    {
+      time: "D+14",
+      actor: "장애학생지원센터",
+      action: "2주 후 재점검 예정",
+      note: "재점검 알림 예약은 백엔드 스케줄러 추가 필요.",
+    },
+  ];
 }

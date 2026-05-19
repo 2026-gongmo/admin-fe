@@ -627,6 +627,35 @@ button { font-family: inherit; cursor: pointer; }
   width: 8px; height: 8px; border-radius: 50%; background: var(--primary);
   border: 2px solid #fff;
 }
+.action-timeline {
+  display: flex; flex-direction: column; gap: 9px;
+  border-left: 2px solid var(--line); padding-left: 12px;
+}
+.action-timeline.compact { gap: 7px; }
+.action-timeline-item {
+  position: relative;
+  background: #F8FAFC; border: 1px solid var(--line-soft);
+  border-radius: 9px; padding: 9px 10px;
+}
+.action-dot {
+  position: absolute; left: -18px; top: 13px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--primary); border: 2px solid #fff;
+}
+.action-dot.warning { background: var(--warning); }
+.action-dot.danger { background: var(--danger); }
+.action-dot.success { background: var(--secondary); }
+.action-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; margin-bottom: 2px;
+}
+.action-head b { font-size: 12.8px; }
+.action-head span {
+  color: var(--sub); font-size: 11px; font-weight: 800;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.action-meta { color: var(--primary); font-size: 11.5px; font-weight: 900; margin-bottom: 4px; }
+.action-note { color: #374151; font-size: 12.4px; line-height: 1.45; }
 .draft-card {
   background: #fff; border: 1px solid var(--line); border-radius: 10px;
   padding: 12px; display: flex; flex-direction: column; gap: 9px;
