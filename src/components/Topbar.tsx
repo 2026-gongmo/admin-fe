@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import { ToastContext } from "../App";
+import { AdminUiContext, ToastContext, type AdminRolePreview } from "../App";
 
 type Period = "today" | "7d" | "30d" | "semester";
 
@@ -30,6 +30,12 @@ export const Topbar: React.FC<Props> = ({
   onUrgencyFilterChange,
 }) => {
   const { showToast } = useContext(ToastContext);
+  const {
+    rolePreview,
+    setRolePreview,
+    presentationMode,
+    togglePresentationMode,
+  } = useContext(AdminUiContext);
   const [localBuilding, setLocalBuilding] = useState("전체");
   const [localUrgency, setLocalUrgency] = useState("전체");
 
@@ -52,6 +58,11 @@ export const Topbar: React.FC<Props> = ({
       setLocalUrgency(value);
       showToast(`긴급도 필터가 "${value}"(으)로 변경되었습니다. 현재는 Mock 필터입니다.`);
     }
+  };
+
+  const changeRole = (role: AdminRolePreview) => {
+    setRolePreview(role);
+    showToast(`${roleLabel(role)} 권한 미리보기입니다. 실제 인가는 백엔드 붙여야 함.`, "warning");
   };
 
   return (
@@ -90,16 +101,50 @@ export const Topbar: React.FC<Props> = ({
         </select>
       </label>
 
+      <label className="filter select-filter">
+        <span>권한</span>
+        <select
+          value={rolePreview}
+          onChange={(e) => changeRole(e.target.value as AdminRolePreview)}
+          aria-label="관리자 권한 미리보기"
+        >
+          <option value="center">센터</option>
+          <option value="facility">시설팀</option>
+          <option value="super">슈퍼관리자</option>
+        </select>
+      </label>
+
       <div className="spacer" />
 
       {rightExtras}
 
       <button
         className="export-btn"
+        aria-label="CSV 내보내기 Mock"
         onClick={() => showToast("CSV 내보내기 동작입니다. 현재는 Mock 데이터 기준입니다.")}
       >
         ⇩ 내보내기
       </button>
+      <button
+        className={"h-btn" + (presentationMode ? " primary" : "")}
+        onClick={() => {
+          togglePresentationMode();
+          showToast(
+            presentationMode ? "발표 모드를 종료했습니다." : "발표 모드입니다. 개발 안내 문구 일부를 숨깁니다.",
+            "success"
+          );
+        }}
+      >
+        발표 모드
+      </button>
     </div>
   );
 };
+
+function roleLabel(role: AdminRolePreview): string {
+  return {
+    center: "장애학생지원센터",
+    facility: "시설관리팀",
+    super: "슈퍼관리자",
+  }[role];
+}

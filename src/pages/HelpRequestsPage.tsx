@@ -8,6 +8,7 @@ import { ToastContext } from "../App";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { OperationalStatus } from "../components/OperationalStatus";
 import { PageState } from "../components/PageState";
+import { SkeletonTable } from "../components/SkeletonTable";
 
 const FILTERS: { key: HelpRequestStatus | "all"; label: string }[] = [
   { key: "all", label: "전체" },
@@ -24,6 +25,15 @@ const STATUS_ACTIONS: HelpRequestStatus[] = [
   "cancelled",
 ];
 
+type HelpSortKey = "createdAt" | "responderCount" | "location";
+type SortDirection = "asc" | "desc";
+
+const HELP_SORT_OPTIONS: { key: HelpSortKey; label: string }[] = [
+  { key: "createdAt", label: "요청 시간" },
+  { key: "responderCount", label: "응답자 수" },
+  { key: "location", label: "위치" },
+];
+
 export const HelpRequestsPage: React.FC = () => {
   const { showToast } = useContext(ToastContext);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -36,6 +46,10 @@ export const HelpRequestsPage: React.FC = () => {
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
   const [isLoading, setIsLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
+  const [sortKey, setSortKey] = useState<HelpSortKey>("createdAt");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [detailOpen, setDetailOpen] = useState(true);
+  const [detailPinned, setDetailPinned] = useState(true);
   const [confirmAction, setConfirmAction] = useState<{
     title: string;
     description: string;
@@ -62,7 +76,7 @@ export const HelpRequestsPage: React.FC = () => {
   const filtered = useMemo(
     () => {
       const normalized = query.trim().toLowerCase();
-      return items.filter((item) => {
+      const rows = items.filter((item) => {
         const statusMatched = filter === "all" || item.status === filter;
         const queryMatched =
           normalized.length === 0 ||
@@ -78,8 +92,14 @@ export const HelpRequestsPage: React.FC = () => {
             .includes(normalized);
         return statusMatched && queryMatched;
       });
+      return [...rows].sort((a, b) => {
+        const left = helpSortValue(a, sortKey);
+        const right = helpSortValue(b, sortKey);
+        const result = left > right ? 1 : left < right ? -1 : 0;
+        return sortDirection === "asc" ? result : -result;
+      });
     },
-    [items, filter, query]
+    [filter, items, query, sortDirection, sortKey]
   );
 
   const selected = useMemo(
@@ -195,6 +215,27 @@ export const HelpRequestsPage: React.FC = () => {
           <span className="small-muted">
             검색 결과 {filtered.length}건 · 실제 서버 검색은 백엔드 붙여야 함
           </span>
+          <label className="filter select-filter">
+            <span>정렬</span>
+            <select
+              value={sortKey}
+              onChange={(e) => setSortKey(e.target.value as HelpSortKey)}
+            >
+              {HELP_SORT_OPTIONS.map((option) => (
+                <option key={option.key} value={option.key}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            className="h-btn"
+            onClick={() =>
+              setSortDirection((current) => (current === "desc" ? "asc" : "desc"))
+            }
+          >
+            {sortDirection === "desc" ? "내림차순" : "오름차순"}
+          </button>
         </div>
 
         <div className="row-flex" style={{ marginBottom: 12, flexWrap: "wrap" }}>
@@ -216,11 +257,7 @@ export const HelpRequestsPage: React.FC = () => {
         <div className="split">
           <div className="panel" style={{ padding: 0, overflow: "hidden" }}>
             {isLoading ? (
-              <PageState
-                kind="loading"
-                title="도움 요청을 불러오는 중입니다"
-                description="현재는 Mock 목록 조회입니다. 실시간 알림과 상태 동기화는 백엔드 붙여야 함."
-              />
+              <SkeletonTable rows={5} cols={6} />
             ) : (
             <table className="table">
               <thead>
@@ -242,6 +279,7 @@ export const HelpRequestsPage: React.FC = () => {
                     onClick={() => {
                       setSelectedId(h.id);
                       setSearchParams({ selected: h.id });
+                      setDetailOpen(true);
                     }}
                   >
                     <td className="small-muted">{h.createdAt}</td>
@@ -279,15 +317,34 @@ export const HelpRequestsPage: React.FC = () => {
             )}
           </div>
 
-          <div className="detail">
+          {detailOpen ? (
+          <div className={"detail" + (detailPinned ? " pinned" : "")}>
             {selected ? (
               <>
-                <div>
-                  <div style={{ fontSize: 16, fontWeight: 800 }}>
-                    {selected.type}
+                <div className="detail-title-row">
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 800 }}>
+                      {selected.type}
+                    </div>
+                    <div className="small-muted">
+                      {selected.location} · {selected.createdAt}
+                    </div>
                   </div>
-                  <div className="small-muted">
-                    {selected.location} · {selected.createdAt}
+                  <div className="detail-actions">
+                    <button
+                      className="icon-mini-btn"
+                      onClick={() => setDetailPinned((value) => !value)}
+                      title={detailPinned ? "상세 패널 고정 해제" : "상세 패널 고정"}
+                    >
+                      {detailPinned ? "고정" : "해제"}
+                    </button>
+                    <button
+                      className="icon-mini-btn"
+                      onClick={() => setDetailOpen(false)}
+                      title="상세 패널 닫기"
+                    >
+                      닫기
+                    </button>
                   </div>
                 </div>
 
@@ -354,6 +411,15 @@ export const HelpRequestsPage: React.FC = () => {
               <div className="small-muted">도움 요청을 선택해 주세요.</div>
             )}
           </div>
+          ) : (
+            <div className="detail-collapsed">
+              <b>상세 패널이 닫혀 있습니다.</b>
+              <span>도움 요청을 선택하면 다시 열립니다.</span>
+              <button className="h-btn primary" onClick={() => setDetailOpen(true)}>
+                상세 패널 열기
+              </button>
+            </div>
+          )}
         </div>
       </main>
       <ConfirmModal
@@ -385,4 +451,10 @@ function helpStatusFromParam(value: string | null): HelpRequestStatus | "all" {
   return ["requesting", "responded", "cancelled", "center_check"].includes(value ?? "")
     ? (value as HelpRequestStatus)
     : "all";
+}
+
+function helpSortValue(item: HelpRequest, key: HelpSortKey): string | number {
+  if (key === "responderCount") return item.responderCount;
+  if (key === "location") return item.location;
+  return item.createdAt;
 }

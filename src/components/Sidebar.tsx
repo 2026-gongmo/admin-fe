@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useContext } from "react";
 import { NavLink } from "react-router-dom";
+import { AdminUiContext, type AdminRolePreview } from "../App";
 
 interface NavItem {
   to: string;
   label: string;
   icon: string;
   count?: number;
+  roles?: AdminRolePreview[];
 }
 
 const ANALYSIS: NavItem[] = [
@@ -14,13 +16,13 @@ const ANALYSIS: NavItem[] = [
   { to: "/public-data", label: "공공데이터 비교", icon: "◇" },
   { to: "/analysis", label: "반복 문제", icon: "↗" },
   { to: "/help-requests", label: "도움 요청", icon: "!", count: 5 },
-  { to: "/stories", label: "경험 피드", icon: "≡", count: 4 },
+  { to: "/stories", label: "경험 피드", icon: "≡", count: 4, roles: ["center", "super"] },
 ];
 
 const OUTPUT: NavItem[] = [
   { to: "/demo-guide", label: "시연 가이드", icon: "?" },
   { to: "/workflow", label: "개선 워크플로우", icon: "→" },
-  { to: "/monthly-report", label: "리포트", icon: "📄" },
+  { to: "/monthly-report", label: "리포트", icon: "📄", roles: ["center", "super"] },
 ];
 
 const ACCOUNT: NavItem[] = [
@@ -28,6 +30,11 @@ const ACCOUNT: NavItem[] = [
 ];
 
 export const Sidebar: React.FC = () => {
+  const { rolePreview, presentationMode } = useContext(AdminUiContext);
+  const canSee = (item: NavItem) => !item.roles || item.roles.includes(rolePreview);
+  const analysisItems = ANALYSIS.filter(canSee);
+  const outputItems = OUTPUT.filter(canSee);
+
   return (
     <aside className="sidebar">
       <div className="sb-brand">
@@ -37,8 +44,13 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
 
+      <div className="role-preview-pill">
+        {roleLabel(rolePreview)}
+        {presentationMode && <span>발표 모드</span>}
+      </div>
+
       <div className="sb-section">분석</div>
-      {ANALYSIS.map((item) => (
+      {analysisItems.map((item) => (
         <NavLink
           key={item.to}
           to={item.to}
@@ -53,7 +65,7 @@ export const Sidebar: React.FC = () => {
       ))}
 
       <div className="sb-section">출력</div>
-      {OUTPUT.map((item) => (
+      {outputItems.map((item) => (
         <NavLink
           key={item.to}
           to={item.to}
@@ -90,3 +102,11 @@ export const Sidebar: React.FC = () => {
     </aside>
   );
 };
+
+function roleLabel(role: AdminRolePreview): string {
+  return {
+    center: "장애학생지원센터",
+    facility: "시설관리팀 미리보기",
+    super: "슈퍼관리자 미리보기",
+  }[role];
+}

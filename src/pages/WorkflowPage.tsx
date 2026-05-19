@@ -10,6 +10,7 @@ import { ToastContext } from "../App";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { OperationalStatus } from "../components/OperationalStatus";
 import { PageState } from "../components/PageState";
+import { SkeletonTable } from "../components/SkeletonTable";
 
 const STAGES: { key: WorkflowStage; label: string; desc: string }[] = [
   { key: "reported", label: "제보 접수", desc: "학생 제보와 공감이 모임" },
@@ -18,6 +19,24 @@ const STAGES: { key: WorkflowStage; label: string; desc: string }[] = [
   { key: "scheduled", label: "조치 예정", desc: "예산·일정·담당자 확정" },
   { key: "resolved", label: "해결됨", desc: "현장 확인 후 종료" },
 ];
+
+type WorkflowSortKey = "dueDate" | "owner" | "buildingName" | "stage";
+type SortDirection = "asc" | "desc";
+
+const WORKFLOW_SORT_OPTIONS: { key: WorkflowSortKey; label: string }[] = [
+  { key: "dueDate", label: "기한순" },
+  { key: "owner", label: "담당자순" },
+  { key: "buildingName", label: "장소순" },
+  { key: "stage", label: "단계순" },
+];
+
+const STAGE_WEIGHT: Record<WorkflowStage, number> = {
+  reported: 1,
+  reviewing: 2,
+  sent_to_facility: 3,
+  scheduled: 4,
+  resolved: 5,
+};
 
 export const WorkflowPage: React.FC = () => {
   const { showToast } = useContext(ToastContext);
@@ -29,6 +48,10 @@ export const WorkflowPage: React.FC = () => {
     workflowStageFromParam(searchParams.get("stage"))
   );
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
+  const [sortKey, setSortKey] = useState<WorkflowSortKey>("dueDate");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [detailOpen, setDetailOpen] = useState(true);
+  const [detailPinned, setDetailPinned] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
   const [confirmAction, setConfirmAction] = useState<{
@@ -58,6 +81,17 @@ export const WorkflowPage: React.FC = () => {
     () => tasks.find((task) => task.id === selectedId) ?? null,
     [tasks, selectedId]
   );
+
+  const sortedTasks = useMemo(() => {
+    const direction = sortDirection === "asc" ? 1 : -1;
+    return [...tasks].sort((a, b) => {
+      const aValue = workflowSortValue(a, sortKey);
+      const bValue = workflowSortValue(b, sortKey);
+      if (aValue < bValue) return -1 * direction;
+      if (aValue > bValue) return 1 * direction;
+      return a.title.localeCompare(b.title, "ko");
+    });
+  }, [sortDirection, sortKey, tasks]);
 
   const stageCounts = useMemo(
     () =>
@@ -141,6 +175,29 @@ export const WorkflowPage: React.FC = () => {
           <span className="small-muted">
             검색 결과 {tasks.length}건 · 실제 서버 검색은 백엔드 붙여야 함
           </span>
+          <label className="filter select-filter">
+            <span>정렬</span>
+            <select
+              value={sortKey}
+              onChange={(e) => setSortKey(e.target.value as WorkflowSortKey)}
+              aria-label="개선 과제 정렬 기준"
+            >
+              {WORKFLOW_SORT_OPTIONS.map((option) => (
+                <option key={option.key} value={option.key}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            className="h-btn"
+            onClick={() =>
+              setSortDirection((current) => (current === "asc" ? "desc" : "asc"))
+            }
+            aria-label="개선 과제 정렬 방향 변경"
+          >
+            {sortDirection === "asc" ? "오름차순" : "내림차순"}
+          </button>
         </div>
 
         <div className="row-flex" style={{ marginBottom: 12, flexWrap: "wrap" }}>
@@ -162,11 +219,7 @@ export const WorkflowPage: React.FC = () => {
         <div className="split mt-14">
           <div className="panel" style={{ padding: 0, overflow: "hidden" }}>
             {isLoading ? (
-              <PageState
-                kind="loading"
-                title="개선 과제를 불러오는 중입니다"
-                description="현재는 Mock 과제 목록입니다. 단계 저장과 일정 동기화는 백엔드 붙여야 함."
-              />
+              <SkeletonTable rows={4} cols={5} />
             ) : (
             <table className="table">
               <thead>
@@ -179,13 +232,14 @@ export const WorkflowPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {tasks.map((task) => (
+                {sortedTasks.map((task) => (
                   <tr
                     key={task.id}
                     className={task.id === selectedId ? "selected" : ""}
                     onClick={() => {
                       setSelectedId(task.id);
                       setSearchParams({ selected: task.id });
+                      setDetailOpen(true);
                     }}
                   >
                     <td>
@@ -220,15 +274,37 @@ export const WorkflowPage: React.FC = () => {
             )}
           </div>
 
-          <div className="detail">
+          {detailOpen ? (
+          <div className={"detail" + (detailPinned ? " pinned" : "")}>
             {selected ? (
               <>
-                <div>
-                  <div style={{ fontSize: 16, fontWeight: 800 }}>
-                    {selected.title}
+                <div className="detail-title-row">
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 800 }}>
+                      {selected.title}
+                    </div>
+                    <div className="small-muted">
+                      {selected.buildingName} · {selected.problemType} · {selected.owner}
+                    </div>
                   </div>
-                  <div className="small-muted">
-                    {selected.buildingName} · {selected.problemType} · {selected.owner}
+                  <div className="detail-actions">
+                    <span className={`status ${stageClass(selected.stage)}`}>
+                      {labelOf(selected.stage)}
+                    </span>
+                    <button
+                      className="icon-mini-btn"
+                      onClick={() => setDetailPinned((current) => !current)}
+                      aria-label={detailPinned ? "상세 패널 고정 해제" : "상세 패널 고정"}
+                    >
+                      {detailPinned ? "고정" : "해제"}
+                    </button>
+                    <button
+                      className="icon-mini-btn"
+                      onClick={() => setDetailOpen(false)}
+                      aria-label="상세 패널 닫기"
+                    >
+                      닫기
+                    </button>
                   </div>
                 </div>
 
@@ -272,6 +348,16 @@ export const WorkflowPage: React.FC = () => {
               <div className="small-muted">개선 과제를 선택해 주세요.</div>
             )}
           </div>
+          ) : (
+            <button
+              className="detail-collapsed"
+              onClick={() => setDetailOpen(true)}
+              type="button"
+            >
+              상세 패널 열기
+              <span>선택한 개선 과제의 근거와 처리 단계를 다시 확인합니다.</span>
+            </button>
+          )}
         </div>
       </main>
       <ConfirmModal
@@ -316,4 +402,9 @@ function workflowStageFromParam(value: string | null): WorkflowStage | "all" {
   )
     ? (value as WorkflowStage)
     : "all";
+}
+
+function workflowSortValue(task: ImprovementTask, key: WorkflowSortKey): string | number {
+  if (key === "stage") return STAGE_WEIGHT[task.stage];
+  return task[key];
 }

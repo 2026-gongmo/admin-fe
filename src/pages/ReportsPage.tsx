@@ -21,6 +21,7 @@ import { ToastContext } from "../App";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { OperationalStatus } from "../components/OperationalStatus";
 import { PageState } from "../components/PageState";
+import { SkeletonTable } from "../components/SkeletonTable";
 
 const STATUSES: { key: ReportStatus | "all"; label: string }[] = [
   { key: "all", label: "전체" },
@@ -112,6 +113,8 @@ export const ReportsPage: React.FC = () => {
   const [reloadKey, setReloadKey] = useState(0);
   const [sortKey, setSortKey] = useState<SortKey>("reportCount");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [detailOpen, setDetailOpen] = useState(true);
+  const [detailPinned, setDetailPinned] = useState(true);
   const [processMemo, setProcessMemo] = useState("");
   const [processReason, setProcessReason] = useState(PROCESS_REASONS[0]);
   const [department, setDepartment] = useState(DEPARTMENTS[0]);
@@ -350,11 +353,7 @@ export const ReportsPage: React.FC = () => {
         <div className="split">
           <div className="panel" style={{ padding: 0, overflow: "hidden" }}>
             {isLoading ? (
-              <PageState
-                kind="loading"
-                title="제보 목록을 불러오는 중입니다"
-                description="Mock API 지연을 반영한 상태입니다. 실제 서버 로딩/에러 처리는 백엔드 붙여야 함."
-              />
+              <SkeletonTable rows={6} cols={8} />
             ) : (
             <table className="table">
               <thead>
@@ -378,6 +377,7 @@ export const ReportsPage: React.FC = () => {
                     onClick={() => {
                       setSelectedId(r.id);
                       setSearchParams({ selected: r.id });
+                      setDetailOpen(true);
                     }}
                   >
                     <td>
@@ -426,7 +426,8 @@ export const ReportsPage: React.FC = () => {
             )}
           </div>
 
-          <div className="detail">
+          {detailOpen ? (
+          <div className={"detail" + (detailPinned ? " pinned" : "")}>
             {selected ? (
               <>
                 <div
@@ -444,7 +445,25 @@ export const ReportsPage: React.FC = () => {
                       제보 #{selected.id.toUpperCase()} · {selected.createdAt}
                     </div>
                   </div>
-                  <ReportStatusBadge status={selected.status} />
+                  <div className="detail-actions">
+                    <ReportStatusBadge status={selected.status} />
+                    <button
+                      className="icon-mini-btn"
+                      onClick={() => setDetailPinned((value) => !value)}
+                      title={detailPinned ? "상세 패널 고정 해제" : "상세 패널 고정"}
+                      aria-label={detailPinned ? "상세 패널 고정 해제" : "상세 패널 고정"}
+                    >
+                      {detailPinned ? "고정" : "해제"}
+                    </button>
+                    <button
+                      className="icon-mini-btn"
+                      onClick={() => setDetailOpen(false)}
+                      title="상세 패널 닫기"
+                      aria-label="상세 패널 닫기"
+                    >
+                      닫기
+                    </button>
+                  </div>
                 </div>
 
                 <div className="imgs">
@@ -703,6 +722,15 @@ export const ReportsPage: React.FC = () => {
               <div className="small-muted">제보를 선택해 주세요.</div>
             )}
           </div>
+          ) : (
+            <div className="detail-collapsed">
+              <b>상세 패널이 닫혀 있습니다.</b>
+              <span>목록에서 제보를 선택하거나 버튼을 눌러 다시 열 수 있습니다.</span>
+              <button className="h-btn primary" onClick={() => setDetailOpen(true)}>
+                상세 패널 열기
+              </button>
+            </div>
+          )}
         </div>
       </main>
       <ConfirmModal
