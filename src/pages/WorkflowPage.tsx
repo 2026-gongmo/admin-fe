@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Topbar } from "../components/Topbar";
 import {
+  ApiError,
   getImprovementTasks,
   updateImprovementTaskStage,
 } from "../services/api";
@@ -12,6 +13,7 @@ import { OperationalStatus } from "../components/OperationalStatus";
 import { PageState } from "../components/PageState";
 import { SkeletonTable } from "../components/SkeletonTable";
 import { ActionTimeline, type ActionTimelineItem } from "../components/ActionTimeline";
+import { ApiFailureBanner } from "../components/ApiFailureBanner";
 
 const STAGES: { key: WorkflowStage; label: string; desc: string }[] = [
   { key: "reported", label: "제보 접수", desc: "학생 제보와 공감이 모임" },
@@ -54,6 +56,7 @@ export const WorkflowPage: React.FC = () => {
   const [detailOpen, setDetailOpen] = useState(true);
   const [detailPinned, setDetailPinned] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [apiError, setApiError] = useState<ApiError | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [confirmAction, setConfirmAction] = useState<{
     title: string;
@@ -65,17 +68,24 @@ export const WorkflowPage: React.FC = () => {
 
   useEffect(() => {
     setIsLoading(true);
+    setApiError(null);
     getImprovementTasks({
       stage: stageFilter,
       query,
-    }).then((items) => {
-      setTasks(items);
-      const nextId = items.some((item) => item.id === requestedSelectedId)
-        ? requestedSelectedId
-        : items[0]?.id ?? null;
-      setSelectedId(nextId);
-      setIsLoading(false);
-    });
+    })
+      .then((items) => {
+        setTasks(items);
+        const nextId = items.some((item) => item.id === requestedSelectedId)
+          ? requestedSelectedId
+          : items[0]?.id ?? null;
+        setSelectedId(nextId);
+      })
+      .catch((error) => {
+        setApiError(toApiError(error));
+        setTasks([]);
+        setSelectedId(null);
+      })
+      .finally(() => setIsLoading(false));
   }, [query, reloadKey, requestedSelectedId, stageFilter]);
 
   const selected = useMemo(
@@ -109,10 +119,15 @@ export const WorkflowPage: React.FC = () => {
 
   const performStageChange = async (stage: WorkflowStage) => {
     if (!selected) return;
-    const updated = await updateImprovementTaskStage(selected.id, stage);
-    if (!updated) return;
-    setTasks((cur) => cur.map((task) => (task.id === updated.id ? updated : task)));
-    showToast(`"${selected.title}" 상태가 "${labelOf(stage)}"(으)로 변경되었습니다.`);
+    try {
+      const updated = await updateImprovementTaskStage(selected.id, stage);
+      if (!updated) return;
+      setTasks((cur) => cur.map((task) => (task.id === updated.id ? updated : task)));
+      showToast(`"${selected.title}" 상태가 "${labelOf(stage)}"(으)로 변경되었습니다.`);
+    } catch (error) {
+      const apiError = toApiError(error);
+      showToast(`저장 실패: ${apiError.message}`, "error");
+    }
   };
 
   const setStage = (stage: WorkflowStage) => {
@@ -175,6 +190,13 @@ export const WorkflowPage: React.FC = () => {
           title="개선 워크플로우 동기화 상태"
           onRetry={() => setReloadKey((key) => key + 1)}
         />
+        {apiError && (
+          <ApiFailureBanner
+            message={apiError.message}
+            code={`${apiError.code}${apiError.status ? ` · HTTP ${apiError.status}` : ""}`}
+            onRetry={() => setReloadKey((key) => key + 1)}
+          />
+        )}
 
         <div className="workflow-steps">
           {stageCounts.map((stage, i) => (
@@ -250,6 +272,14 @@ export const WorkflowPage: React.FC = () => {
           <div className="panel" style={{ padding: 0, overflow: "hidden" }}>
             {isLoading ? (
               <SkeletonTable rows={4} cols={5} />
+            ) : apiError ? (
+              <PageState
+                kind="error"
+                title="개선 과제를 불러오지 못했습니다"
+                description="워크플로우 API 실패 시 단계 변경과 부서 전달을 중단해야 합니다. 현재는 Mock 실패 시뮬레이션입니다."
+                actionLabel="다시 불러오기"
+                onAction={() => setReloadKey((key) => key + 1)}
+              />
             ) : (
             <table className="table">
               <thead>
@@ -521,4 +551,9 @@ function workflowHistory(task: ImprovementTask): ActionTimelineItem[] {
       tone: "success",
     },
   ];
+}
+
+function toApiError(error: unknown): ApiError {
+  if (error instanceof ApiError) return error;
+  return new ApiError("UNKNOWN_ERROR", "알 수 없는 API 오류가 발생했습니다.");
 }

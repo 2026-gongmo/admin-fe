@@ -5,6 +5,7 @@ import {
   getPublicDataComparisons,
   getReports,
   updateReportStatus,
+  ApiError,
 } from "../services/api";
 import type {
   AccessibilityReport,
@@ -23,6 +24,7 @@ import { OperationalStatus } from "../components/OperationalStatus";
 import { PageState } from "../components/PageState";
 import { SkeletonTable } from "../components/SkeletonTable";
 import { ActionTimeline, type ActionTimelineItem } from "../components/ActionTimeline";
+import { ApiFailureBanner } from "../components/ApiFailureBanner";
 
 const STATUSES: { key: ReportStatus | "all"; label: string }[] = [
   { key: "all", label: "전체" },
@@ -111,6 +113,7 @@ export const ReportsPage: React.FC = () => {
   );
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
   const [isLoading, setIsLoading] = useState(true);
+  const [apiError, setApiError] = useState<ApiError | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [sortKey, setSortKey] = useState<SortKey>("reportCount");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
@@ -136,17 +139,24 @@ export const ReportsPage: React.FC = () => {
 
   useEffect(() => {
     setIsLoading(true);
+    setApiError(null);
     getReports({
       status: filterStatus,
       query,
-    }).then((r) => {
-      setReports(r);
-      const nextId = r.some((item) => item.id === requestedSelectedId)
-        ? requestedSelectedId
-        : r[0]?.id ?? null;
-      setSelectedId(nextId);
-      setIsLoading(false);
-    });
+    })
+      .then((r) => {
+        setReports(r);
+        const nextId = r.some((item) => item.id === requestedSelectedId)
+          ? requestedSelectedId
+          : r[0]?.id ?? null;
+        setSelectedId(nextId);
+      })
+      .catch((error) => {
+        setApiError(toApiError(error));
+        setReports([]);
+        setSelectedId(null);
+      })
+      .finally(() => setIsLoading(false));
     getPublicDataComparisons().then(setComparisons);
   }, [filterStatus, query, reloadKey, requestedSelectedId]);
 
@@ -204,10 +214,15 @@ export const ReportsPage: React.FC = () => {
 
   const performStatusChange = async (status: ReportStatus) => {
     if (!selected) return;
-    const updated = await updateReportStatus(selected.id, status);
-    if (updated) {
-      setReports((cur) => cur.map((r) => (r.id === updated.id ? updated : r)));
-      showToast(`상태가 "${labelOf(status)}"(으)로 변경되었습니다.`);
+    try {
+      const updated = await updateReportStatus(selected.id, status);
+      if (updated) {
+        setReports((cur) => cur.map((r) => (r.id === updated.id ? updated : r)));
+        showToast(`상태가 "${labelOf(status)}"(으)로 변경되었습니다.`);
+      }
+    } catch (error) {
+      const apiError = toApiError(error);
+      showToast(`저장 실패: ${apiError.message}`, "error");
     }
   };
 
@@ -318,6 +333,13 @@ export const ReportsPage: React.FC = () => {
           title="제보 목록 동기화 상태"
           onRetry={() => setReloadKey((key) => key + 1)}
         />
+        {apiError && (
+          <ApiFailureBanner
+            message={apiError.message}
+            code={`${apiError.code}${apiError.status ? ` · HTTP ${apiError.status}` : ""}`}
+            onRetry={() => setReloadKey((key) => key + 1)}
+          />
+        )}
 
         <div className="toolbar">
           <input
@@ -384,6 +406,14 @@ export const ReportsPage: React.FC = () => {
           <div className="panel" style={{ padding: 0, overflow: "hidden" }}>
             {isLoading ? (
               <SkeletonTable rows={6} cols={8} />
+            ) : apiError ? (
+              <PageState
+                kind="error"
+                title="제보 목록을 불러오지 못했습니다"
+                description="서버 오류와 백엔드 미연동은 구분해서 표시합니다. 현재는 Mock API 실패 시뮬레이션 상태입니다."
+                actionLabel="다시 불러오기"
+                onAction={() => setReloadKey((key) => key + 1)}
+              />
             ) : (
             <table className="table">
               <thead>
@@ -903,4 +933,9 @@ function reportHistory(report: AccessibilityReport): ActionTimelineItem[] {
       note: "재점검 알림 예약은 백엔드 스케줄러 추가 필요.",
     },
   ];
+}
+
+function toApiError(error: unknown): ApiError {
+  if (error instanceof ApiError) return error;
+  return new ApiError("UNKNOWN_ERROR", "알 수 없는 API 오류가 발생했습니다.");
 }

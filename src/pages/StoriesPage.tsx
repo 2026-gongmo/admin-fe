@@ -1,13 +1,14 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Topbar } from "../components/Topbar";
-import { getStoriesForAdmin, updateStoryVisibility } from "../services/api";
+import { ApiError, getStoriesForAdmin, updateStoryVisibility } from "../services/api";
 import type { Story } from "../types";
 import { VisibilityBadge } from "../components/StatusBadge";
 import { ToastContext } from "../App";
 import { OperationalStatus } from "../components/OperationalStatus";
 import { PageState } from "../components/PageState";
 import { ActionTimeline, type ActionTimelineItem } from "../components/ActionTimeline";
+import { ApiFailureBanner } from "../components/ApiFailureBanner";
 
 const PRIVACY_REVIEWS: Record<
   string,
@@ -50,6 +51,7 @@ export const StoriesPage: React.FC = () => {
   const [stories, setStories] = useState<Story[]>([]);
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
   const [isLoading, setIsLoading] = useState(true);
+  const [apiError, setApiError] = useState<ApiError | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   const resetSearch = () => {
@@ -59,10 +61,16 @@ export const StoriesPage: React.FC = () => {
 
   useEffect(() => {
     setIsLoading(true);
-    getStoriesForAdmin({ query }).then((items) => {
-      setStories(items);
-      setIsLoading(false);
-    });
+    setApiError(null);
+    getStoriesForAdmin({ query })
+      .then((items) => {
+        setStories(items);
+      })
+      .catch((error) => {
+        setApiError(toApiError(error));
+        setStories([]);
+      })
+      .finally(() => setIsLoading(false));
   }, [query, reloadKey]);
 
   const filteredStories = useMemo(() => {
@@ -87,16 +95,21 @@ export const StoriesPage: React.FC = () => {
     id: string,
     visibility: NonNullable<Story["visibility"]>
   ) => {
-    const updated = await updateStoryVisibility(id, visibility);
-    if (updated) {
-      setStories((cur) => cur.map((s) => (s.id === id ? updated : s)));
-      const label =
-        visibility === "public"
-          ? "공개"
-          : visibility === "private"
-          ? "비공개"
-          : "센터 전용";
-      showToast(`이야기 공개 범위가 "${label}"(으)로 변경되었습니다.`);
+    try {
+      const updated = await updateStoryVisibility(id, visibility);
+      if (updated) {
+        setStories((cur) => cur.map((s) => (s.id === id ? updated : s)));
+        const label =
+          visibility === "public"
+            ? "공개"
+            : visibility === "private"
+            ? "비공개"
+            : "센터 전용";
+        showToast(`이야기 공개 범위가 "${label}"(으)로 변경되었습니다.`);
+      }
+    } catch (error) {
+      const apiError = toApiError(error);
+      showToast(`저장 실패: ${apiError.message}`, "error");
     }
   };
 
@@ -117,6 +130,13 @@ export const StoriesPage: React.FC = () => {
           title="경험 피드 검수 동기화 상태"
           onRetry={() => setReloadKey((key) => key + 1)}
         />
+        {apiError && (
+          <ApiFailureBanner
+            message={apiError.message}
+            code={`${apiError.code}${apiError.status ? ` · HTTP ${apiError.status}` : ""}`}
+            onRetry={() => setReloadKey((key) => key + 1)}
+          />
+        )}
 
         <div className="toolbar">
           <input
@@ -149,6 +169,15 @@ export const StoriesPage: React.FC = () => {
               kind="loading"
               title="경험 피드를 불러오는 중입니다"
               description="현재는 Mock API 기준입니다. 원문/공개본 저장과 검수 이력은 백엔드 붙여야 함."
+            />
+          )}
+          {!isLoading && apiError && (
+            <PageState
+              kind="error"
+              title="경험 피드를 불러오지 못했습니다"
+              description="익명화 검수 API 실패 시 원문/공개본 저장과 공개 상태 변경을 중단해야 합니다. 현재는 Mock 실패 시뮬레이션입니다."
+              actionLabel="다시 불러오기"
+              onAction={() => setReloadKey((key) => key + 1)}
             />
           )}
           {!isLoading && filteredStories.map((s) => {
@@ -304,7 +333,7 @@ export const StoriesPage: React.FC = () => {
               </div>
             );
           })}
-          {!isLoading && filteredStories.length === 0 && (
+          {!isLoading && !apiError && filteredStories.length === 0 && (
             <PageState
               kind="empty"
               title="검색 조건에 맞는 경험 피드가 없습니다"
@@ -376,4 +405,9 @@ function storyHistory(story: Story): ActionTimelineItem[] {
       tone: story.aiReview?.reportReady ? "success" : "warning",
     },
   ];
+}
+
+function toApiError(error: unknown): ApiError {
+  if (error instanceof ApiError) return error;
+  return new ApiError("UNKNOWN_ERROR", "알 수 없는 API 오류가 발생했습니다.");
 }

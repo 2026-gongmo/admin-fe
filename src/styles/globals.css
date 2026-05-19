@@ -144,6 +144,18 @@ button { font-family: inherit; cursor: pointer; }
 }
 .ops-status-bar b { display: block; font-size: 13px; margin-bottom: 2px; }
 .ops-status-bar span { display: block; color: var(--sub); font-size: 12.3px; line-height: 1.45; }
+.api-failure-banner {
+  background: var(--danger-50); border: 1px solid #FECACA;
+  border-radius: 12px; padding: 12px 14px; margin-bottom: 14px;
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+}
+.api-failure-banner b { display: block; color: #991B1B; font-size: 13.5px; margin-bottom: 4px; }
+.api-failure-banner span { display: block; color: #7F1D1D; font-size: 12.6px; line-height: 1.5; }
+.api-failure-banner code {
+  display: inline-flex; margin-top: 7px;
+  background: #fff; color: #991B1B; border: 1px solid #FECACA;
+  border-radius: 7px; padding: 4px 7px; font-size: 11.5px;
+}
 .search-input {
   flex: 1; min-width: 260px;
   background: #F8FAFC; border: 1px solid var(--line); border-radius: 8px;
@@ -796,6 +808,15 @@ button { font-family: inherit; cursor: pointer; }
 .state-sample-card.denied { background: var(--warning-50); border-color: #FDE68A; }
 .state-sample-title { font-size: 13px; font-weight: 800; margin-bottom: 5px; }
 .state-sample-body { color: #374151; font-size: 12.5px; line-height: 1.5; }
+.api-failure-lab {
+  background: #F8FAFC; border: 1px solid var(--line-soft);
+  border-radius: 10px; padding: 12px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.api-failure-lab b { display: block; font-size: 13.5px; margin-top: 2px; }
+.api-failure-lab p {
+  margin: 5px 0 0; color: #374151; font-size: 12.5px; line-height: 1.5;
+}
 .role-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .role-card {
   background: #F8FAFC; border: 1px solid var(--line-soft);
@@ -950,7 +971,7 @@ body.presentation-mode .page {
   .demo-step { grid-template-columns: 34px 1fr; }
   .demo-step .row-flex { grid-column: 2; }
   .toolbar { align-items: stretch; }
-  .ops-status-bar, .locked-action-card { align-items: stretch; flex-direction: column; }
+  .ops-status-bar, .locked-action-card, .api-failure-banner { align-items: stretch; flex-direction: column; }
   .detail-title-row { flex-direction: column; }
   .detail-actions { justify-content: flex-start; }
   .skeleton-row { grid-template-columns: 1fr 1fr; }

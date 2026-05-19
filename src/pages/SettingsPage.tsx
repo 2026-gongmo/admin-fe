@@ -1,6 +1,11 @@
 import React, { useContext, useState } from "react";
 import { Topbar } from "../components/Topbar";
 import { ToastContext } from "../App";
+import {
+  getMockApiFailureScope,
+  setMockApiFailureScope,
+  type MockApiFailureScope,
+} from "../services/api";
 
 const ROLE_POLICIES = [
   {
@@ -162,10 +167,33 @@ const STATE_SAMPLES = [
   },
 ];
 
+const API_FAILURE_SCOPES: { key: MockApiFailureScope; label: string; desc: string }[] = [
+  { key: "off", label: "정상", desc: "Mock API를 정상 응답으로 유지" },
+  { key: "reports", label: "제보 실패", desc: "접근성 제보 조회/저장 실패 UI 확인" },
+  { key: "helpRequests", label: "도움 실패", desc: "도움 요청 API 실패 UI 확인" },
+  { key: "stories", label: "피드 실패", desc: "경험 피드 검수 API 실패 UI 확인" },
+  { key: "improvementTasks", label: "워크플로우 실패", desc: "개선 과제 API 실패 UI 확인" },
+  { key: "all", label: "전체 실패", desc: "주요 운영 API 전체 실패 상태 확인" },
+];
+
 export const SettingsPage: React.FC = () => {
   const { showToast } = useContext(ToastContext);
   const [previewRole, setPreviewRole] = useState(ROLE_POLICIES[0].role);
+  const [failureScope, setFailureScope] = useState<MockApiFailureScope>(
+    getMockApiFailureScope()
+  );
   const currentPolicy = ROLE_POLICIES.find((item) => item.role === previewRole) ?? ROLE_POLICIES[0];
+
+  const changeFailureScope = (scope: MockApiFailureScope) => {
+    setMockApiFailureScope(scope);
+    setFailureScope(scope);
+    showToast(
+      scope === "off"
+        ? "Mock API 실패 시뮬레이션을 해제했습니다."
+        : "Mock API 실패 시뮬레이션을 켰습니다. 대상 화면에서 재시도/에러 UI를 확인하세요.",
+      scope === "off" ? "success" : "warning"
+    );
+  };
 
   return (
     <>
@@ -356,7 +384,7 @@ export const SettingsPage: React.FC = () => {
           <div className="panel">
             <div className="panel-h">
               <h3>로딩/에러/빈 상태 샘플</h3>
-              <span className="mock-pill">프론트 상태 설계</span>
+              <span className="mock-pill">31차 API 실패 UI</span>
             </div>
             <div className="state-sample-grid">
               {STATE_SAMPLES.map((item) => (
@@ -365,6 +393,31 @@ export const SettingsPage: React.FC = () => {
                   <div className="state-sample-body">{item.body}</div>
                 </div>
               ))}
+            </div>
+            <div className="api-failure-lab mt-14">
+              <div>
+                <div className="field-l">Mock API 실패 시뮬레이션</div>
+                <b>현재 모드: {API_FAILURE_SCOPES.find((item) => item.key === failureScope)?.label}</b>
+                <p>
+                  실제 fetch는 아직 사용하지 않습니다. 백엔드 연결 후 서버 오류, 권한 오류,
+                  네트워크 실패를 같은 패턴으로 처리하기 위한 프론트 상태 샘플입니다.
+                </p>
+              </div>
+              <div className="seg-control">
+                {API_FAILURE_SCOPES.map((item) => (
+                  <button
+                    key={item.key}
+                    className={failureScope === item.key ? "on" : ""}
+                    onClick={() => changeFailureScope(item.key)}
+                    title={item.desc}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+              <span className="backend-needed">
+                실제 서버 오류 응답 코드는 Spring Boot 예외 응답 표준화 필요
+              </span>
             </div>
           </div>
 

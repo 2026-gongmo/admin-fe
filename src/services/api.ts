@@ -105,6 +105,49 @@ const delay = <T>(value: T, ms = 200) =>
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
+export type MockApiFailureScope =
+  | "off"
+  | "all"
+  | "reports"
+  | "helpRequests"
+  | "stories"
+  | "improvementTasks";
+
+const MOCK_API_FAILURE_KEY = "onda_mock_api_failure_scope";
+
+export function getMockApiFailureScope(): MockApiFailureScope {
+  if (typeof window === "undefined") return "off";
+  const value = window.localStorage.getItem(MOCK_API_FAILURE_KEY);
+  return isMockApiFailureScope(value) ? value : "off";
+}
+
+export function setMockApiFailureScope(scope: MockApiFailureScope) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(MOCK_API_FAILURE_KEY, scope);
+}
+
+const maybeFail = (scope: Exclude<MockApiFailureScope, "off" | "all">) => {
+  const mode = getMockApiFailureScope();
+  if (mode === "all" || mode === scope) {
+    throw new ApiError(
+      "MOCK_API_FAILURE",
+      "Mock API 실패 시뮬레이션입니다. 실제 운영에서는 Spring Boot API 오류 응답을 이 UI로 표시합니다.",
+      503
+    );
+  }
+};
+
+function isMockApiFailureScope(value: string | null): value is MockApiFailureScope {
+  return (
+    value === "off" ||
+    value === "all" ||
+    value === "reports" ||
+    value === "helpRequests" ||
+    value === "stories" ||
+    value === "improvementTasks"
+  );
+}
+
 const includesQuery = (fields: Array<string | number | undefined>, query?: string) => {
   const normalized = query?.trim().toLowerCase();
   if (!normalized) return true;
@@ -123,6 +166,7 @@ export async function getBuildings(): Promise<Building[]> {
   return delay(buildings);
 }
 export async function getReports(query: ReportQuery = {}): Promise<AccessibilityReport[]> {
+  maybeFail("reports");
   const filtered = _reports.filter((report) => {
     const statusMatched =
       !query.status || query.status === "all" || report.status === query.status;
@@ -161,12 +205,14 @@ export async function updateReportStatus(
   id: string,
   status: ReportStatus
 ): Promise<AccessibilityReport | undefined> {
+  maybeFail("reports");
   _reports = _reports.map((r) => (r.id === id ? { ...r, status } : r));
   return delay(_reports.find((r) => r.id === id));
 }
 export async function getHelpRequests(
   query: HelpRequestQuery = {}
 ): Promise<HelpRequest[]> {
+  maybeFail("helpRequests");
   const filtered = _helpRequests.filter((request) => {
     const statusMatched =
       !query.status || query.status === "all" || request.status === query.status;
@@ -194,12 +240,14 @@ export async function updateHelpRequestStatus(
   id: string,
   status: HelpRequestStatus
 ): Promise<HelpRequest | undefined> {
+  maybeFail("helpRequests");
   _helpRequests = _helpRequests.map((request) =>
     request.id === id ? { ...request, status } : request
   );
   return delay(_helpRequests.find((request) => request.id === id));
 }
 export async function getStoriesForAdmin(query: StoryQuery = {}): Promise<Story[]> {
+  maybeFail("stories");
   const filtered = _stories.filter((story) => {
     const visibilityMatched =
       !query.visibility ||
@@ -240,6 +288,7 @@ export async function updateStoryVisibility(
   id: string,
   visibility: NonNullable<Story["visibility"]>
 ): Promise<Story | undefined> {
+  maybeFail("stories");
   _stories = _stories.map((s) => (s.id === id ? { ...s, visibility } : s));
   return delay(_stories.find((s) => s.id === id));
 }
@@ -255,6 +304,7 @@ export async function getPublicDataComparisons(): Promise<PublicDataComparison[]
 export async function getImprovementTasks(
   query: ImprovementTaskQuery = {}
 ): Promise<ImprovementTask[]> {
+  maybeFail("improvementTasks");
   const filtered = _tasks.filter((task) => {
     const stageMatched =
       !query.stage || query.stage === "all" || task.stage === query.stage;
@@ -280,6 +330,7 @@ export async function updateImprovementTaskStage(
   id: string,
   stage: WorkflowStage
 ): Promise<ImprovementTask | undefined> {
+  maybeFail("improvementTasks");
   _tasks = _tasks.map((task) => (task.id === id ? { ...task, stage } : task));
   return delay(_tasks.find((task) => task.id === id));
 }

@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Topbar } from "../components/Topbar";
-import { getHelpRequests, updateHelpRequestStatus } from "../services/api";
+import { ApiError, getHelpRequests, updateHelpRequestStatus } from "../services/api";
 import type { HelpRequest, HelpRequestStatus } from "../types";
 import { HelpStatusBadge } from "../components/StatusBadge";
 import { ToastContext } from "../App";
@@ -10,6 +10,7 @@ import { OperationalStatus } from "../components/OperationalStatus";
 import { PageState } from "../components/PageState";
 import { SkeletonTable } from "../components/SkeletonTable";
 import { ActionTimeline, type ActionTimelineItem } from "../components/ActionTimeline";
+import { ApiFailureBanner } from "../components/ApiFailureBanner";
 
 const FILTERS: { key: HelpRequestStatus | "all"; label: string }[] = [
   { key: "all", label: "전체" },
@@ -46,6 +47,7 @@ export const HelpRequestsPage: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
   const [isLoading, setIsLoading] = useState(true);
+  const [apiError, setApiError] = useState<ApiError | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [sortKey, setSortKey] = useState<HelpSortKey>("createdAt");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
@@ -61,17 +63,24 @@ export const HelpRequestsPage: React.FC = () => {
 
   useEffect(() => {
     setIsLoading(true);
+    setApiError(null);
     getHelpRequests({
       status: filter,
       query,
-    }).then((requests) => {
-      setItems(requests);
-      const nextId = requests.some((item) => item.id === requestedSelectedId)
-        ? requestedSelectedId
-        : requests[0]?.id ?? null;
-      setSelectedId(nextId);
-      setIsLoading(false);
-    });
+    })
+      .then((requests) => {
+        setItems(requests);
+        const nextId = requests.some((item) => item.id === requestedSelectedId)
+          ? requestedSelectedId
+          : requests[0]?.id ?? null;
+        setSelectedId(nextId);
+      })
+      .catch((error) => {
+        setApiError(toApiError(error));
+        setItems([]);
+        setSelectedId(null);
+      })
+      .finally(() => setIsLoading(false));
   }, [filter, query, reloadKey, requestedSelectedId]);
 
   const filtered = useMemo(
@@ -114,12 +123,17 @@ export const HelpRequestsPage: React.FC = () => {
 
   const performStatusUpdate = async (status: HelpRequestStatus) => {
     if (!selected) return;
-    const updated = await updateHelpRequestStatus(selected.id, status);
-    if (updated) {
-      setItems((cur) => cur.map((item) => (item.id === updated.id ? updated : item)));
-      showToast(
-        `도움 요청 상태가 "${helpStatusLabel(status)}"(으)로 변경되었습니다. Mock 상태입니다.`
-      );
+    try {
+      const updated = await updateHelpRequestStatus(selected.id, status);
+      if (updated) {
+        setItems((cur) => cur.map((item) => (item.id === updated.id ? updated : item)));
+        showToast(
+          `도움 요청 상태가 "${helpStatusLabel(status)}"(으)로 변경되었습니다. Mock 상태입니다.`
+        );
+      }
+    } catch (error) {
+      const apiError = toApiError(error);
+      showToast(`저장 실패: ${apiError.message}`, "error");
     }
   };
 
@@ -195,6 +209,13 @@ export const HelpRequestsPage: React.FC = () => {
           title="도움 요청 동기화 상태"
           onRetry={() => setReloadKey((key) => key + 1)}
         />
+        {apiError && (
+          <ApiFailureBanner
+            message={apiError.message}
+            code={`${apiError.code}${apiError.status ? ` · HTTP ${apiError.status}` : ""}`}
+            onRetry={() => setReloadKey((key) => key + 1)}
+          />
+        )}
 
         <div className="help-kpi-grid">
           <div className="kpi">
@@ -288,6 +309,14 @@ export const HelpRequestsPage: React.FC = () => {
           <div className="panel" style={{ padding: 0, overflow: "hidden" }}>
             {isLoading ? (
               <SkeletonTable rows={5} cols={6} />
+            ) : apiError ? (
+              <PageState
+                kind="error"
+                title="도움 요청 목록을 불러오지 못했습니다"
+                description="실시간 요청 API 실패 시 관리자에게 재시도와 센터 확인 필요 상태를 분리해서 보여줘야 합니다. 현재는 Mock 실패 시뮬레이션입니다."
+                actionLabel="다시 불러오기"
+                onAction={() => setReloadKey((key) => key + 1)}
+              />
             ) : (
             <table className="table">
               <thead>
@@ -555,4 +584,9 @@ function helpHistory(item: HelpRequest): ActionTimelineItem[] {
       tone: "warning",
     },
   ];
+}
+
+function toApiError(error: unknown): ApiError {
+  if (error instanceof ApiError) return error;
+  return new ApiError("UNKNOWN_ERROR", "알 수 없는 API 오류가 발생했습니다.");
 }
