@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { Topbar } from "../components/Topbar";
-import { ToastContext } from "../App";
+import { AdminUiContext, ToastContext } from "../App";
 
 const STEPS = [
   {
@@ -133,6 +133,63 @@ const DEMO_ROUTES = [
   },
 ];
 
+const CLICK_FLOW = [
+  {
+    time: "00:00",
+    action: "발표 모드 켜기",
+    route: "/demo-guide",
+    say: "프론트는 공모전 시연용 Mock이며, 실제 저장은 백엔드 연결 전입니다.",
+  },
+  {
+    time: "00:20",
+    action: "대시보드",
+    route: "/dashboard",
+    say: "오늘 처리할 일과 반복 제보가 학교 개선 우선순위로 정리됩니다.",
+  },
+  {
+    time: "00:55",
+    action: "공공데이터 비교",
+    route: "/public-data",
+    say: "공공데이터의 시설 존재 여부와 실제 이용 가능성 사이의 차이를 보여줍니다.",
+  },
+  {
+    time: "01:25",
+    action: "중앙도서관 제보 상세",
+    route: "/reports?selected=r_1",
+    say: "제보 원문, 공감 수, AI 추천 조치, 처리 이력을 한 화면에서 확인합니다.",
+  },
+  {
+    time: "02:10",
+    action: "도움 요청 상세",
+    route: "/help-requests?selected=h_1",
+    say: "돌발 상황은 요청, 응답, 센터 확인 이력으로 관리됩니다.",
+  },
+  {
+    time: "02:45",
+    action: "경험 피드 검수",
+    route: "/stories?q=조별과제",
+    say: "AI 익명화와 관리자 검수로 당사자 경험을 안전하게 공개합니다.",
+  },
+  {
+    time: "03:30",
+    action: "개선 워크플로우",
+    route: "/workflow?selected=task_1",
+    say: "개인 제보가 센터 검토, 부서 전달, 조치 예정으로 이어집니다.",
+  },
+  {
+    time: "04:20",
+    action: "월간 리포트",
+    route: "/monthly-report",
+    say: "공감과 반복 제보가 학교에 제출할 개선 근거 리포트로 전환됩니다.",
+  },
+  {
+    time: "04:50",
+    action: "설정/API 실패 상태",
+    route: "/settings",
+    say: "백엔드 연결 전 필요한 API, 권한, 실패 상태까지 준비되어 있습니다.",
+  },
+];
+
 const BACKEND_TODOS = [
   "인증/인가: Spring Security/JWT 또는 세션 로그인",
   "제보 저장: 상태, 담당자, 우선순위, 처리 메모 DB 저장",
@@ -146,6 +203,7 @@ const BACKEND_TODOS = [
 export const DemoGuidePage: React.FC = () => {
   const navigate = useNavigate();
   const { showToast } = useContext(ToastContext);
+  const { presentationMode, togglePresentationMode } = useContext(AdminUiContext);
 
   return (
     <>
@@ -159,6 +217,20 @@ export const DemoGuidePage: React.FC = () => {
             </div>
           </div>
           <div className="row-flex">
+            <button
+              className={"h-btn" + (presentationMode ? " primary" : "")}
+              onClick={() => {
+                togglePresentationMode();
+                showToast(
+                  presentationMode
+                    ? "발표 모드를 종료했습니다."
+                    : "발표 모드를 켰습니다. 시연 순서대로 이동하세요.",
+                  "success"
+                );
+              }}
+            >
+              {presentationMode ? "발표 모드 켜짐" : "발표 모드 켜기"}
+            </button>
             <button
               className="h-btn"
               onClick={() => showToast("데모 리셋은 Mock 동작입니다. 실제 상태 초기화는 백엔드 추가 필요.")}
@@ -180,6 +252,26 @@ export const DemoGuidePage: React.FC = () => {
             <div className="s">
               현재는 프론트 MVP이므로 실제 저장/공유/기관 연동은 백엔드 붙여야 함으로 표시합니다.
             </div>
+          </div>
+        </div>
+
+        <div className="panel demo-flow-panel">
+          <div className="panel-h">
+            <h3>실제 클릭 순서</h3>
+            <span className="mock-pill">32차 발표 모드</span>
+          </div>
+          <div className="demo-flow-list">
+            {CLICK_FLOW.map((item) => (
+              <button
+                className="demo-flow-item"
+                key={`${item.time}-${item.action}`}
+                onClick={() => navigate(item.route)}
+              >
+                <span>{item.time}</span>
+                <b>{item.action}</b>
+                <em>{item.say}</em>
+              </button>
+            ))}
           </div>
         </div>
 

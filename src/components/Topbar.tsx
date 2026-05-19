@@ -130,7 +130,7 @@ export const Topbar: React.FC<Props> = ({
         onClick={() => {
           togglePresentationMode();
           showToast(
-            presentationMode ? "발표 모드를 종료했습니다." : "발표 모드입니다. 개발 안내 문구 일부를 숨깁니다.",
+            presentationMode ? "발표 모드를 종료했습니다." : "발표 모드입니다. 시연 화면을 더 넓게 정리합니다.",
             "success"
           );
         }}
