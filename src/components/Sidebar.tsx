@@ -1,6 +1,6 @@
 import React, { useContext } from "react";
 import { NavLink } from "react-router-dom";
-import { AdminUiContext, type AdminRolePreview } from "../App";
+import { AdminUiContext, AuthContext, type AdminRolePreview } from "../App";
 
 interface NavItem {
   to: string;
@@ -31,6 +31,7 @@ const ACCOUNT: NavItem[] = [
 
 export const Sidebar: React.FC = () => {
   const { rolePreview, presentationMode } = useContext(AdminUiContext);
+  const { admin } = useContext(AuthContext);
   const canSee = (item: NavItem) => !item.roles || item.roles.includes(rolePreview);
   const analysisItems = ANALYSIS.filter(canSee);
   const outputItems = OUTPUT.filter(canSee);
@@ -93,10 +94,10 @@ export const Sidebar: React.FC = () => {
       ))}
 
       <div className="sb-foot">
-        <div className="av">박</div>
+        <div className="av">{(admin?.name ?? "박주연").slice(0, 1)}</div>
         <div>
-          <div className="n">박주연</div>
-          <div className="r">장애학생지원센터</div>
+          <div className="n">{admin?.name ?? "박주연"}</div>
+          <div className="r">{roleLabel(rolePreview)}</div>
         </div>
       </div>
     </aside>

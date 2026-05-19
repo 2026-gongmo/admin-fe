@@ -7,6 +7,8 @@ import {
   getReports,
   getHelpRequests,
   getStoriesForAdmin,
+  getModeLabel,
+  isHttpMode,
 } from "../services/api";
 import {
   ReportStatusBadge,
@@ -62,7 +64,7 @@ export const DashboardPage: React.FC = () => {
       title: "미응답 도움 요청",
       count: help.filter((item) => item.status === "center_check").length,
       desc: "센터 확인 필요 상태",
-      to: "/help-requests?selected=h_3",
+      to: `/help-requests${help[0] ? `?selected=${help[0].id}` : ""}`,
       tone: "danger",
     },
     {
@@ -83,7 +85,7 @@ export const DashboardPage: React.FC = () => {
       title: "고위험 미해결 제보",
       count: reports.filter((item) => item.urgency === "high" && item.status !== "resolved").length,
       desc: "시설팀 전달 우선",
-      to: "/reports?selected=r_1",
+      to: `/reports${top5[0] ? `?selected=${top5[0].id}` : ""}`,
       tone: "danger",
     },
   ];
@@ -96,7 +98,8 @@ export const DashboardPage: React.FC = () => {
           <div>
             <h1>ONDA 관리자 대시보드</h1>
             <div className="sub">
-              {periodLabel(period)} · Mock 데이터 기준 · API 연동 예정
+              {periodLabel(period)} · {getModeLabel()} 기준 ·{" "}
+              {isHttpMode() ? "일부 API 연결됨" : "API 연동 예정"}
             </div>
           </div>
         </div>

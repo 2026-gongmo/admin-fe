@@ -1,11 +1,12 @@
 # ONDA 관리자 웹 API 연동 계획
 
-현재 관리자 웹은 Mock 데이터 기반입니다. 아래 API는 Spring Boot 백엔드 추가 시 연결할 후보이며, 실제 엔드포인트명은 백엔드 설계 과정에서 조정할 수 있습니다.
+현재 관리자 웹은 기본적으로 Mock 데이터 기반이며, `VITE_API_MODE=http`일 때 Spring Boot 백엔드 일부 API를 실제 호출합니다. 아래 표는 현재 연결 상태와 남은 후보를 함께 정리합니다.
 
 ## 공통 원칙
 
 - 관리자 웹은 `src/services/api.ts`를 통해서만 데이터를 가져오도록 유지합니다.
 - 페이지 컴포넌트에서 `fetch`를 직접 호출하지 않습니다.
+- 실제 HTTP 호출은 `src/services/httpClient.ts`를 통해서만 수행합니다.
 - 모든 변경성 작업은 감사 로그를 남길 수 있게 설계해야 합니다.
 - 실제 운영에서는 인증/인가가 먼저 붙어야 합니다.
 
@@ -15,9 +16,12 @@
 |---|---|---:|---|---|
 | 대시보드 | KPI 조회 | GET | `/api/admin/dashboard` | 백엔드 추가 필요 |
 | 대시보드 | AI 우선 조치 추천 | GET | `/api/admin/recommendations` | 백엔드 추가 필요 |
-| 접근성 제보 | 제보 목록 | GET | `/api/admin/reports` | 백엔드 추가 필요 |
+| 인증 | 관리자 로그인 | POST | `/api/admin/auth/login` | 34차 연결 완료 |
+| 인증 | 내 정보 조회 | GET | `/api/admin/me` | 34차 연결 완료 |
+| 인증 | 로그아웃 | POST | `/api/admin/auth/logout` | 로컬 토큰 제거 + API 호출 준비 |
+| 접근성 제보 | 제보 목록 | GET | `/api/admin/reports` | 34차 연결 완료 |
 | 접근성 제보 | 제보 상세 | GET | `/api/admin/reports/{reportId}` | 백엔드 추가 필요 |
-| 접근성 제보 | 상태 변경 | PATCH | `/api/admin/reports/{reportId}/status` | 백엔드 추가 필요 |
+| 접근성 제보 | 상태 변경 | PATCH | `/api/admin/reports/{reportId}/status` | 34차 연결 완료 |
 | 접근성 제보 | 담당자 배정 | PATCH | `/api/admin/reports/{reportId}/assignee` | 백엔드 추가 필요 |
 | 접근성 제보 | 우선순위 변경 | PATCH | `/api/admin/reports/{reportId}/priority` | 백엔드 추가 필요 |
 | 접근성 제보 | 처리 메모 저장 | POST | `/api/admin/reports/{reportId}/notes` | 백엔드 추가 필요 |
@@ -25,8 +29,9 @@
 | 공공데이터 | 데이터 출처 목록 | GET | `/api/admin/public-data/sources` | 백엔드 추가 필요 |
 | 공공데이터 | 현장 제보 비교 | GET | `/api/admin/public-data/comparisons` | 백엔드 추가 필요 |
 | 반복 분석 | 반복 문제 목록 | GET | `/api/admin/analysis/repeated-issues` | 백엔드 추가 필요 |
-| 도움 요청 | 도움 요청 목록 | GET | `/api/admin/help-requests` | 백엔드 추가 필요 |
+| 도움 요청 | 도움 요청 목록 | GET | `/api/admin/help-requests` | 34차 연결 완료 |
 | 도움 요청 | 도움 요청 상세 | GET | `/api/admin/help-requests/{requestId}` | 백엔드 추가 필요 |
+| 도움 요청 | 상태 변경 | PATCH | `/api/admin/help-requests/{requestId}/status` | 34차 연결 완료 |
 | 도움 요청 | 센터 판단 저장 | PATCH | `/api/admin/help-requests/{requestId}/decision` | 백엔드 추가 필요 |
 | 경험 피드 | 피드 목록 | GET | `/api/admin/stories` | 백엔드 추가 필요 |
 | 경험 피드 | 공개 상태 변경 | PATCH | `/api/admin/stories/{storyId}/visibility` | 백엔드 추가 필요 |
@@ -130,7 +135,38 @@
 
 현재 실패 상태는 `localStorage` 기반 Mock이며, 실제 `fetch` 또는 외부 API 호출은 없습니다.
 
-## 36차 API 연결 우선순위
+## 32차~35차 실제 API 1차 연결
+
+| 차수 | 내용 | 상태 |
+|---:|---|---|
+| 32차 | `VITE_API_MODE=mock/http`, `VITE_API_BASE_URL`, `httpClient.ts` 추가 | 완료 |
+| 33차 | `/login` 페이지, 토큰 저장, 세션 복구, 로그아웃 흐름 추가 | 완료 |
+| 34차 | 로그인/me, 제보 목록/상태 변경, 도움 요청 목록/상태 변경 API 연결 | 완료 |
+| 35차 | 빌드, 백엔드 실행, 브라우저 QA, 문서 최신화 | 완료 |
+
+### HTTP 모드 실행 예시
+
+```bash
+cd /Users/juyoung/Downloads/onda/backend
+mvn spring-boot:run -Dspring-boot.run.arguments=--server.port=18080
+```
+
+```bash
+cd /Users/juyoung/Downloads/onda/admin-web
+VITE_API_MODE=http VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --host 127.0.0.1 --port 5174
+```
+
+### 아직 Mock인 영역
+
+- 대시보드 KPI 집계
+- 건물 목록과 미니맵 좌표
+- 담당자 배정, 우선순위 변경, 처리 메모 저장
+- 경험 피드 검수
+- 공공데이터 비교
+- 개선 워크플로우
+- 월간 리포트/PDF/CSV 생성
+
+## 다음 API 연결 우선순위
 
 프론트 구현을 유지하면서 Spring Boot API를 붙일 때는 아래 순서가 가장 현실적입니다.
 

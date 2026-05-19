@@ -18,6 +18,23 @@ export interface User {
   availableHours?: string;
 }
 
+export type AdminRole = "CENTER" | "FACILITY" | "SUPER_ADMIN";
+
+export interface AdminProfile {
+  id: string;
+  email: string;
+  name: string;
+  role: AdminRole;
+  campusId: string;
+  campusName: string;
+}
+
+export interface LoginResult {
+  accessToken: string;
+  tokenType: "Bearer";
+  admin: AdminProfile;
+}
+
 export interface Building {
   id: string;
   name: string;

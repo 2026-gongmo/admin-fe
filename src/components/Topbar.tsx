@@ -1,5 +1,7 @@
 import React, { useContext, useState } from "react";
-import { AdminUiContext, ToastContext, type AdminRolePreview } from "../App";
+import { AdminUiContext, AuthContext, ToastContext, type AdminRolePreview } from "../App";
+import { getApiBaseUrl } from "../services/httpClient";
+import { getModeLabel, isHttpMode } from "../services/api";
 
 type Period = "today" | "7d" | "30d" | "semester";
 
@@ -36,6 +38,7 @@ export const Topbar: React.FC<Props> = ({
     presentationMode,
     togglePresentationMode,
   } = useContext(AdminUiContext);
+  const { admin, logout } = useContext(AuthContext);
   const [localBuilding, setLocalBuilding] = useState("전체");
   const [localUrgency, setLocalUrgency] = useState("전체");
 
@@ -65,12 +68,19 @@ export const Topbar: React.FC<Props> = ({
     showToast(`${roleLabel(role)} 권한 미리보기입니다. 실제 인가는 백엔드 붙여야 함.`, "warning");
   };
 
+  const onLogout = async () => {
+    await logout();
+    showToast("관리자 세션을 종료했습니다.", "success");
+  };
+
   return (
     <div className="topbar">
       <div className="school">
-        <span className="dot"></span>ONDA 대학교
+        <span className="dot"></span>{admin?.campusName ?? "ONDA 대학교"}
       </div>
-      <div className="mock-pill">Mock 데이터</div>
+      <div className={isHttpMode() ? "api-pill" : "mock-pill"} title={getApiBaseUrl()}>
+        {getModeLabel()}
+      </div>
 
       <div className="segment" role="tablist">
         {PERIODS.map((p) => (
@@ -118,6 +128,11 @@ export const Topbar: React.FC<Props> = ({
 
       {rightExtras}
 
+      <div className="admin-session-pill">
+        <b>{admin?.name ?? "박주연"}</b>
+        <span>{admin?.email ?? "center@onda.test"}</span>
+      </div>
+
       <button
         className="export-btn"
         aria-label="CSV 내보내기 Mock"
@@ -136,6 +151,9 @@ export const Topbar: React.FC<Props> = ({
         }}
       >
         발표 모드
+      </button>
+      <button className="h-btn" onClick={onLogout}>
+        로그아웃
       </button>
     </div>
   );

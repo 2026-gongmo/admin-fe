@@ -10,9 +10,9 @@ ONDA 관리자 웹은 장애대학생의 접근성 제보, 도움 요청, 경험
 |---|---|
 | 대상 | 학교/장애학생지원센터 관리자 웹 |
 | 구현 범위 | React + Vite 프론트엔드 |
-| 데이터 | `src/data/mockData.ts` Mock 데이터 |
-| API 계층 | `src/services/api.ts`에서 Mock 반환 |
-| 백엔드 | 미연동, Spring Boot API 추가 필요 |
+| 데이터 | 기본은 `src/data/mockData.ts` Mock 데이터 |
+| API 계층 | `src/services/api.ts`에서 Mock/API 모드 분기 |
+| 백엔드 | Spring Boot API 일부 연결 가능 |
 | 배포/시연 | 로컬 또는 정적 호스팅 가능 |
 
 ## 기술 스택
@@ -124,18 +124,26 @@ npm run build
 
 ## 환경변수
 
-현재는 실제 API를 연결하지 않았기 때문에 `.env`는 필요하지 않습니다. 백엔드 연결 단계에서만 `.env.example`을 기준으로 설정합니다.
+기본 시연은 `.env` 없이 Mock 모드로 동작합니다. Spring Boot 백엔드와 연결하려면 `.env`를 만들고 아래처럼 설정합니다.
 
 ```text
-VITE_API_BASE_URL=
+VITE_API_BASE_URL=http://127.0.0.1:18080
 VITE_API_MODE=mock
+```
+
+실제 백엔드 연결 모드:
+
+```text
+VITE_API_BASE_URL=http://127.0.0.1:18080
+VITE_API_MODE=http
 ```
 
 주의: 실제 `.env`, API Key, Token은 GitHub에 올리지 않습니다.
 
 ## 구현 포인트
 
-- `src/services/api.ts`를 데이터 접근 경계로 두어 Mock에서 Spring Boot API로 교체하기 쉽게 구성했습니다.
+- `src/services/api.ts`를 데이터 접근 경계로 두어 Mock 모드와 Spring Boot API 일부 연결 모드를 분리했습니다.
+- `/login`에서 관리자 이메일/비밀번호로 로그인하고, HTTP 모드에서는 `Authorization: Bearer <token>` 헤더를 붙여 API를 호출합니다.
 - 제보, 도움 요청, 경험 피드, 워크플로우 화면은 URL query로 검색/필터/상세 선택 상태를 재현할 수 있습니다.
 - 위험 작업 전 `ConfirmModal`을 표시해 운영 화면의 실수 방지 흐름을 반영했습니다.
 - `PageState`, `OperationalStatus`, Toast tone을 통해 로딩/빈 상태/Mock 동기화/성공·경고·에러 알림을 준비했습니다.
@@ -160,13 +168,15 @@ VITE_API_MODE=mock
 
 | 기능 | 현재 상태 | 실제 서비스에서 필요한 작업 |
 |---|---|---|
-| 관리자 로그인 | Mock 표시 | Spring Security/JWT 또는 세션 로그인 |
+| 관리자 로그인 | Mock 또는 Spring Boot 세션 로그인 | 운영 토큰 만료/재발급 정책 강화 |
 | 역할별 권한 | Mock 정책표 | API 인가, 메뉴 접근 제어 |
-| 접근성 제보 목록 | Mock 데이터 | 제보 CRUD API, DB 저장 |
+| 접근성 제보 목록 | Mock 또는 `GET /api/admin/reports` | 상세/등록/삭제 등 CRUD 확장 |
+| 제보 상태 변경 | Mock 또는 `PATCH /api/admin/reports/{id}/status` | 담당자/우선순위/메모 API 연결 |
 | 담당자/우선순위 변경 | 프론트 상태 변경 | 담당자 배정 API, 변경 이력 저장 |
 | 처리 메모/상태 변경 사유 | Mock 입력 UI | 처리 로그 저장 API |
 | 첨부파일 | Mock 파일 카드 | 파일 업로드, 바이러스/확장자 검증 |
-| 도움 요청 | Mock 데이터 | 위치 기반 요청/응답 API |
+| 도움 요청 | Mock 또는 `GET /api/admin/help-requests` | 위치 기반 요청/응답 API 고도화 |
+| 도움 요청 상태 변경 | Mock 또는 `PATCH /api/admin/help-requests/{id}/status` | 응답자 배정/센터 판단 저장 연결 |
 | 경험 피드 | Mock 데이터 | 원문/공개본 분리 저장, 신고/검수 API |
 | AI 익명화 | Mock 결과 | LLM API 호출, 민감정보 탐지, 검수 저장 |
 | 공공데이터 비교 | Mock 비교 결과 | data.go.kr 등 외부 API 배치 동기화 |
@@ -175,34 +185,34 @@ VITE_API_MODE=mock
 
 ## 데이터 연동 구조
 
-현재 구조:
+Mock 모드 구조:
 
 ```text
 src/data/mockData.ts -> src/services/api.ts -> src/pages/*
 ```
 
-백엔드 연동 후 예상 구조:
+HTTP 모드 구조:
 
 ```text
-Spring Boot API -> src/services/api.ts -> src/pages/*
+Spring Boot API -> src/services/httpClient.ts -> src/services/api.ts -> src/pages/*
 ```
 
-프론트 화면은 `src/services/api.ts`를 통해 데이터를 받도록 분리되어 있어, 이후 Spring Boot API 연결 시 페이지 전체를 갈아엎기보다 서비스 계층부터 교체하는 방식이 적합합니다.
+프론트 화면은 `src/services/api.ts`를 통해 데이터를 받도록 분리되어 있어, 페이지 컴포넌트에서 직접 `fetch`를 만들지 않습니다.
 
 ## 백엔드 연결 대비 구조
 
-백엔드 연결은 화면을 다시 만드는 작업이 아니라, Mock service를 Spring Boot API client로 바꾸는 작업으로 잡았습니다.
+백엔드 연결은 화면을 다시 만드는 작업이 아니라, Mock service와 Spring Boot API client를 같은 함수 시그니처로 유지하는 작업으로 잡았습니다.
 
 | 전환 지점 | 현재 | 백엔드 연결 후 |
 |---|---|---|
-| 데이터 조회 | `mockData.ts` 배열 필터링 | `GET /api/admin/*` 호출 |
-| 상태 변경 | 프론트 메모리 업데이트 | `PATCH` 요청 후 응답 반영 |
+| 데이터 조회 | `mockData.ts` 배열 필터링 | 일부 `GET /api/admin/*` 호출 완료 |
+| 상태 변경 | 프론트 메모리 업데이트 | 일부 `PATCH` 요청 후 응답 반영 완료 |
 | 실패 처리 | Mock API 실패 시뮬레이션 | 실제 HTTP 에러를 `ApiError`로 변환 |
 | 검색/필터 | URL query + Mock 필터 | URL query + 서버 query parameter |
 | 권한 | UI 미리보기 | Spring Security 인가 + 메뉴/버튼 제한 |
 | 감사 로그 | Mock timeline | DB 저장 감사 로그 |
 
-백엔드 1차에서는 `GET /api/admin/reports`와 `PATCH /api/admin/reports/{reportId}/status`부터 붙이는 것이 가장 효과적입니다. 이 두 API만 연결해도 관리자 웹이 Mock 화면에서 실제 운영 데이터 화면으로 전환되는 첫 흐름을 보여줄 수 있습니다.
+현재 1차 연결 범위는 로그인, 내 정보, 접근성 제보 목록/상태 변경, 도움 요청 목록/상태 변경입니다. 나머지 담당자 배정, 우선순위, 메모, 경험 피드, 공공데이터, 리포트 생성은 아직 Mock 또는 백엔드 추가 필요 상태입니다.
 
 ## 한계와 다음 개선 방향
 
@@ -258,6 +268,10 @@ Spring Boot API -> src/services/api.ts -> src/pages/*
 | 23차 | `.env.example`, Toast 타입, NotFound/권한 없음 페이지 추가 |
 | 24차 | 제보 표 정렬 UI, 권한별 미리보기 토글 추가 |
 | 25차 | README 스크린샷, 환경변수, 구현 포인트 보강 |
+| 32차 | `VITE_API_MODE=mock/http`, API Base URL, HTTP client, API 모드 표시 추가 |
+| 33차 | 관리자 로그인 화면, 토큰 저장, 세션 로딩/로그아웃 흐름 추가 |
+| 34차 | 로그인/me, 접근성 제보 목록/상태 변경, 도움 요청 목록/상태 변경 실제 API 연결 |
+| 35차 | Mock/HTTP 빌드와 브라우저 QA, README/API 상태 문구 정리 |
 | 26차 | 상세 패널 닫기/고정, 도움 요청·워크플로우 정렬, Skeleton 로딩 보강 |
 | 27차 | 상단 권한 미리보기, 권한별 메뉴 숨김 Mock, 접근성용 aria 라벨 보강 |
 | 28차 | 발표 모드 토글, 로컬/정적 시연 상태 문서화, 최종 QA 체크 항목 보강 |

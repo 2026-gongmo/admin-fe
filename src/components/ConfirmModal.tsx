@@ -1,4 +1,5 @@
 import React from "react";
+import { isHttpMode } from "../services/api";
 
 interface Props {
   open: boolean;
@@ -19,11 +20,16 @@ export const ConfirmModal: React.FC<Props> = ({
   confirmText = "확인",
   cancelText = "취소",
   tone = "default",
-  notice = "현재는 Mock 동작입니다. 실제 저장은 백엔드 붙여야 함.",
+  notice,
   onConfirm,
   onCancel,
 }) => {
   if (!open) return null;
+  const noticeText =
+    notice ??
+    (isHttpMode()
+      ? "현재 API 연결 모드입니다. 연결된 저장 기능은 Spring Boot API에 반영됩니다."
+      : "현재는 Mock 동작입니다. 실제 저장은 백엔드 붙여야 함.");
 
   return (
     <div className="modal-backdrop" role="presentation" onClick={onCancel}>
@@ -38,7 +44,7 @@ export const ConfirmModal: React.FC<Props> = ({
           {title}
         </div>
         <div className="confirm-modal-desc">{description}</div>
-        <div className="confirm-modal-notice">{notice}</div>
+        <div className="confirm-modal-notice">{noticeText}</div>
         <div className="confirm-modal-actions">
           <button className="h-btn" onClick={onCancel}>
             {cancelText}

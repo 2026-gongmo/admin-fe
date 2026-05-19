@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Topbar } from "../components/Topbar";
-import { ApiError, getHelpRequests, updateHelpRequestStatus } from "../services/api";
+import { ApiError, getHelpRequests, isHttpMode, updateHelpRequestStatus } from "../services/api";
 import type { HelpRequest, HelpRequestStatus } from "../types";
 import { HelpStatusBadge } from "../components/StatusBadge";
 import { ToastContext } from "../App";
@@ -128,7 +128,9 @@ export const HelpRequestsPage: React.FC = () => {
       if (updated) {
         setItems((cur) => cur.map((item) => (item.id === updated.id ? updated : item)));
         showToast(
-          `도움 요청 상태가 "${helpStatusLabel(status)}"(으)로 변경되었습니다. Mock 상태입니다.`
+          `도움 요청 상태가 "${helpStatusLabel(status)}"(으)로 변경되었습니다.${
+            isHttpMode() ? " API에 반영되었습니다." : " Mock 상태입니다."
+          }`
         );
       }
     } catch (error) {
@@ -261,7 +263,7 @@ export const HelpRequestsPage: React.FC = () => {
             placeholder="위치, 도움 유형, 메모, 센터 판단 검색"
           />
           <span className="small-muted">
-            검색 결과 {filtered.length}건 · 실제 서버 검색은 백엔드 붙여야 함
+            검색 결과 {filtered.length}건 · {isHttpMode() ? "서버 query parameter 적용" : "실제 서버 검색은 백엔드 붙여야 함"}
           </span>
           <label className="filter select-filter">
             <span>정렬</span>

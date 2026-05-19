@@ -41,6 +41,35 @@ npm run dev -- --host 127.0.0.1
 npm run dev -- --host 127.0.0.1 --port 5174
 ```
 
+## Spring Boot API 연결 모드 확인
+
+백엔드를 먼저 실행합니다.
+
+```bash
+cd /Users/juyoung/Downloads/onda/backend
+mvn spring-boot:run -Dspring-boot.run.arguments=--server.port=18080
+```
+
+관리자 웹을 HTTP 모드로 실행합니다.
+
+```bash
+cd /Users/juyoung/Downloads/onda/admin-web
+VITE_API_MODE=http VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --host 127.0.0.1 --port 5174
+```
+
+확인 항목:
+
+- [ ] `http://127.0.0.1:5174/#/dashboard` 접근 시 로그인 화면으로 이동하는가?
+- [ ] `center@onda.test / onda1234!`로 로그인되는가?
+- [ ] 상단 pill이 `Spring Boot API`로 표시되는가?
+- [ ] `#/reports`에서 `GET /api/admin/reports` 기반 목록이 표시되는가?
+- [ ] `#/reports` 상태 변경 시 `PATCH /api/admin/reports/{id}/status`가 성공하는가?
+- [ ] `#/help-requests`에서 `GET /api/admin/help-requests` 기반 목록이 표시되는가?
+- [ ] `#/help-requests` 상태 변경 시 `PATCH /api/admin/help-requests/{id}/status`가 성공하는가?
+- [ ] `#/settings`에 API Base URL과 HTTP 모드가 정확히 표시되는가?
+- [ ] 로그아웃 시 토큰이 제거되고 로그인 화면으로 이동하는가?
+- [ ] 브라우저 콘솔 에러가 없는가?
+
 ## 화면 QA
 
 - [ ] 사이드바 메뉴가 정상 이동되는가?

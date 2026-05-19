@@ -4,6 +4,7 @@ import { Topbar } from "../components/Topbar";
 import {
   getPublicDataComparisons,
   getReports,
+  isHttpMode,
   updateReportStatus,
   ApiError,
 } from "../services/api";
@@ -352,7 +353,7 @@ export const ReportsPage: React.FC = () => {
             placeholder="건물명, 문제유형, 제보 내용, 담당자 검색"
           />
           <span className="small-muted">
-            검색 결과 {filtered.length}건 · 실제 서버 검색은 백엔드 붙여야 함
+            검색 결과 {filtered.length}건 · {isHttpMode() ? "서버 query parameter 적용" : "실제 서버 검색은 백엔드 붙여야 함"}
           </span>
           <label className="filter select-filter">
             <span>정렬</span>

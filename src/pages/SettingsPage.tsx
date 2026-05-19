@@ -2,10 +2,13 @@ import React, { useContext, useState } from "react";
 import { Topbar } from "../components/Topbar";
 import { ToastContext } from "../App";
 import {
+  getModeLabel,
   getMockApiFailureScope,
+  isHttpMode,
   setMockApiFailureScope,
   type MockApiFailureScope,
 } from "../services/api";
+import { getApiBaseUrl } from "../services/httpClient";
 
 const ROLE_POLICIES = [
   {
@@ -58,13 +61,13 @@ const API_MAPPINGS = [
     screen: "접근성 제보",
     endpoint: "GET /api/admin/reports · PATCH /api/admin/reports/{id}",
     purpose: "제보 목록, 상태, 담당자, 우선순위 저장",
-    status: "백엔드 필요",
+    status: "일부 API 연결",
   },
   {
     screen: "도움 요청",
     endpoint: "GET /api/admin/help-requests · PATCH /api/admin/help-requests/{id}",
     purpose: "도움 요청 조회, 센터 확인, 처리 상태 저장",
-    status: "백엔드 필요",
+    status: "일부 API 연결",
   },
   {
     screen: "경험 피드",
@@ -203,7 +206,7 @@ export const SettingsPage: React.FC = () => {
           <div>
             <h1>설정</h1>
             <div className="sub">
-              현재는 프론트 MVP 설정 화면입니다. 실제 저장은 백엔드 붙여야 함.
+              현재 API 모드: {getModeLabel()} · 저장 기능은 연결 범위에 따라 다르게 동작합니다.
             </div>
           </div>
         </div>
@@ -212,10 +215,12 @@ export const SettingsPage: React.FC = () => {
           <span className="badge">운영/연동</span>
           <div>
             <div className="t">
-              현재는 Mock 관리자 세션입니다. 실제 로그인, 권한 검증, API 저장, 감사 로그 저장은 백엔드 붙여야 함.
+              {isHttpMode()
+                ? "Spring Boot API 연결 모드입니다. 로그인, 제보 목록, 제보 상태 변경, 도움 요청 목록/상태 변경은 실제 API를 호출합니다."
+                : "현재는 Mock 관리자 세션입니다. 실제 로그인, 권한 검증, API 저장, 감사 로그 저장은 백엔드 붙여야 함."}
             </div>
             <div className="s">
-              `src/services/api.ts`를 연동 경계로 두고, 추후 Spring Boot API로 교체하는 구조를 전제로 합니다.
+              API Base URL: {getApiBaseUrl()} · `src/services/api.ts`를 연동 경계로 유지합니다.
             </div>
           </div>
         </div>
@@ -223,8 +228,10 @@ export const SettingsPage: React.FC = () => {
         <div className="settings-grid">
           <div className="panel">
             <div className="panel-h">
-              <h3>Mock 관리자 로그인 상태</h3>
-              <span className="backend-needed">인증은 백엔드 붙여야 함</span>
+              <h3>관리자 로그인 상태</h3>
+              <span className={isHttpMode() ? "status done" : "backend-needed"}>
+                {isHttpMode() ? "API 인증 사용" : "인증은 백엔드 붙여야 함"}
+              </span>
             </div>
             <div className="settings-list">
               <div>
@@ -245,7 +252,7 @@ export const SettingsPage: React.FC = () => {
               </div>
               <div>
                 <span>세션 상태</span>
-                <b>Mock 로그인 유지 중</b>
+                <b>{isHttpMode() ? "Bearer token 기반 API 세션" : "Mock 로그인 유지 중"}</b>
               </div>
               <div>
                 <span>기본 분석 기간</span>
@@ -261,7 +268,13 @@ export const SettingsPage: React.FC = () => {
               </button>
               <button
                 className="h-btn"
-                onClick={() => showToast("로그아웃은 Mock 동작입니다. 실제 세션 처리는 백엔드 붙여야 함.")}
+                onClick={() =>
+                  showToast(
+                    isHttpMode()
+                      ? "상단 로그아웃 버튼을 누르면 로컬 토큰을 제거하고 로그인 화면으로 이동합니다."
+                      : "로그아웃은 Mock 동작입니다. 실제 세션 처리는 백엔드 붙여야 함."
+                  )
+                }
               >
                 로그아웃
               </button>
@@ -271,28 +284,30 @@ export const SettingsPage: React.FC = () => {
           <div className="panel">
             <div className="panel-h">
               <h3>API 연동 상태</h3>
-              <span className="backend-needed">백엔드 붙여야 함</span>
+              <span className={isHttpMode() ? "status done" : "backend-needed"}>
+                {isHttpMode() ? "일부 API 연결됨" : "백엔드 붙여야 함"}
+              </span>
             </div>
             <div className="settings-list">
               <div>
                 <span>API Base URL</span>
-                <b>미연결</b>
+                <b>{isHttpMode() ? getApiBaseUrl() : "미연결"}</b>
               </div>
               <div>
                 <span>현재 모드</span>
-                <b>Mock 데이터</b>
+                <b>{getModeLabel()}</b>
               </div>
               <div>
                 <span>인증 방식</span>
-                <b>추후 Spring Security/JWT 검토</b>
+                <b>{isHttpMode() ? "Bearer token + Spring Boot 세션" : "추후 Spring Security/JWT 검토"}</b>
               </div>
               <div>
                 <span>마지막 동기화</span>
-                <b>Mock 데이터 기준 · 2026.05.19 00:00</b>
+                <b>{getModeLabel()} 기준 · 2026.05.19 00:00</b>
               </div>
               <div>
                 <span>데이터 저장</span>
-                <b>현재 브라우저 상태 + Mock API</b>
+                <b>{isHttpMode() ? "제보/도움 요청 상태 변경 일부 API 저장" : "현재 브라우저 상태 + Mock API"}</b>
               </div>
               <div>
                 <span>공공데이터 동기화</span>
@@ -302,7 +317,13 @@ export const SettingsPage: React.FC = () => {
             <div className="row-flex mt-14">
               <button
                 className="h-btn"
-                onClick={() => showToast("API 재시도는 Mock 동작입니다. 실제 호출은 백엔드 붙여야 함.")}
+                onClick={() =>
+                  showToast(
+                    isHttpMode()
+                      ? "상단/목록의 다시 불러오기 버튼으로 실제 API를 재호출합니다."
+                      : "API 재시도는 Mock 동작입니다. 실제 호출은 백엔드 붙여야 함."
+                  )
+                }
               >
                 API 재시도
               </button>
@@ -318,7 +339,9 @@ export const SettingsPage: React.FC = () => {
           <div className="panel">
             <div className="panel-h">
               <h3>화면별 API 매핑표</h3>
-              <span className="backend-needed">API 연결은 백엔드 붙여야 함</span>
+              <span className={isHttpMode() ? "status done" : "backend-needed"}>
+                {isHttpMode() ? "일부 API 연결됨" : "API 연결은 백엔드 붙여야 함"}
+              </span>
             </div>
             <div className="api-map-list">
               {API_MAPPINGS.map((item) => (
@@ -328,7 +351,15 @@ export const SettingsPage: React.FC = () => {
                     <div className="api-purpose">{item.purpose}</div>
                   </div>
                   <code>{item.endpoint}</code>
-                  <span className={item.status === "Mock" ? "mock-pill" : "backend-needed"}>
+                  <span
+                    className={
+                      item.status === "Mock"
+                        ? "mock-pill"
+                        : item.status.includes("연결")
+                          ? "status done"
+                          : "backend-needed"
+                    }
+                  >
                     {item.status}
                   </span>
                 </div>
