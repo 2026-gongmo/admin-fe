@@ -26,6 +26,14 @@ npm run dev -- --host 127.0.0.1
 - [ ] `http://127.0.0.1:5173/#/demo-guide`
 - [ ] `http://127.0.0.1:5173/#/settings`
 
+직접 진입 확인 주소:
+
+- [ ] `http://127.0.0.1:5173/#/reports?selected=r_1`
+- [ ] `http://127.0.0.1:5173/#/reports?selected=r_1&status=checking&q=중앙도서관`
+- [ ] `http://127.0.0.1:5173/#/help-requests?selected=h_1`
+- [ ] `http://127.0.0.1:5173/#/workflow?stage=reviewing`
+- [ ] `http://127.0.0.1:5173/#/stories?q=조별과제`
+
 ## 화면 QA
 
 - [ ] 사이드바 메뉴가 정상 이동되는가?
@@ -35,6 +43,9 @@ npm run dev -- --host 127.0.0.1
 - [ ] Mock 기능은 실제 저장처럼 표현하지 않는가?
 - [ ] `백엔드 붙여야 함`, `Mock`, `추가 필요` 표현이 필요한 곳에 보이는가?
 - [ ] PDF/CSV 내보내기는 Mock Toast로만 동작하는가?
+- [ ] 위험 작업 전 ConfirmModal이 표시되는가?
+- [ ] 로딩/빈 상태가 공통 PageState 형태로 표시되는가?
+- [ ] 운영 동기화 상태 바가 Mock 상태를 명확히 보여주는가?
 - [ ] 콘솔 에러가 없는가?
 
 ## 반응형 확인

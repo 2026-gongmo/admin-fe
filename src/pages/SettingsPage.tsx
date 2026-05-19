@@ -98,6 +98,47 @@ const BACKEND_CHECKLIST = [
   "에러 응답: 권한 없음, 데이터 없음, API 실패 상태 표준화",
 ];
 
+const API_TRANSITION_CHECKS = [
+  {
+    title: "Query parameter 유지",
+    body: "제보, 도움 요청, 경험 피드, 워크플로우 검색/필터가 URL query와 연결되어 새로고침·공유 시 상태를 재현할 수 있습니다.",
+  },
+  {
+    title: "Mock service 경계 유지",
+    body: "`src/services/api.ts` 함수명과 타입을 유지하고, 실제 fetch는 백엔드 연결 단계에서만 교체합니다.",
+  },
+  {
+    title: "실패/빈 상태 UI",
+    body: "목록 0건, 로딩 중, 재시도 버튼을 공통 컴포넌트로 표시해 API 실패 대응 화면을 미리 준비했습니다.",
+  },
+];
+
+const DEMO_QA_CHECKS = [
+  "대시보드 오늘 처리할 일에서 관련 페이지로 이동 가능",
+  "제보 상세 URL: #/reports?selected=r_1 직접 진입 가능",
+  "도움 요청 URL: #/help-requests?selected=h_1 직접 진입 가능",
+  "워크플로우 단계 변경 전 ConfirmModal 표시",
+  "Mock/백엔드 필요 문구가 실제 연동처럼 보이지 않음",
+];
+
+const LOCKED_ACTIONS = [
+  {
+    role: "시설관리팀",
+    action: "경험 피드 원문 열람",
+    reason: "민감정보 검수는 장애학생지원센터 권한에서만 처리",
+  },
+  {
+    role: "장애학생지원센터",
+    action: "예산 확정 처리",
+    reason: "시설 예산 확정은 시설관리팀/학교 행정 권한 필요",
+  },
+  {
+    role: "일반 관리자",
+    action: "PDF 공식 발송",
+    reason: "공문 번호 발급과 외부 전송은 백엔드 감사 로그 필요",
+  },
+];
+
 const STATE_SAMPLES = [
   {
     title: "로딩 중",
@@ -282,6 +323,36 @@ export const SettingsPage: React.FC = () => {
 
           <div className="panel">
             <div className="panel-h">
+              <h3>API 전환 준비 체크</h3>
+              <span className="mock-pill">17차 보강</span>
+            </div>
+            <div className="quality-list">
+              {API_TRANSITION_CHECKS.map((item) => (
+                <div key={item.title}>
+                  <b>{item.title}</b>
+                  <span>{item.body}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="panel">
+            <div className="panel-h">
+              <h3>발표 시연 QA</h3>
+              <span className="mock-pill">18차 보강</span>
+            </div>
+            <div className="demo-check-list">
+              {DEMO_QA_CHECKS.map((item) => (
+                <label className="check-item" key={item}>
+                  <input type="checkbox" defaultChecked />
+                  <span>{item}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="panel">
+            <div className="panel-h">
               <h3>로딩/에러/빈 상태 샘플</h3>
               <span className="mock-pill">프론트 상태 설계</span>
             </div>
@@ -313,6 +384,30 @@ export const SettingsPage: React.FC = () => {
             </div>
             <div className="small-muted mt-10">
               실제 메뉴 제한과 API 인가는 Spring Security/JWT 권한 검증으로 연결해야 합니다.
+            </div>
+          </div>
+
+          <div className="panel">
+            <div className="panel-h">
+              <h3>권한 제한 액션 샘플</h3>
+              <span className="backend-needed">실제 인가는 백엔드 붙여야 함</span>
+            </div>
+            <div className="locked-action-list">
+              {LOCKED_ACTIONS.map((item) => (
+                <div className="locked-action-card" key={`${item.role}-${item.action}`}>
+                  <div>
+                    <b>{item.action}</b>
+                    <span>{item.role} · {item.reason}</span>
+                  </div>
+                  <button
+                    className="h-btn"
+                    disabled
+                    title="실제 권한 검사는 백엔드 붙여야 함"
+                  >
+                    권한 필요
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
 

@@ -190,6 +190,15 @@ export async function getHelpRequests(
   });
   return delay(clone(filtered));
 }
+export async function updateHelpRequestStatus(
+  id: string,
+  status: HelpRequestStatus
+): Promise<HelpRequest | undefined> {
+  _helpRequests = _helpRequests.map((request) =>
+    request.id === id ? { ...request, status } : request
+  );
+  return delay(_helpRequests.find((request) => request.id === id));
+}
 export async function getStoriesForAdmin(query: StoryQuery = {}): Promise<Story[]> {
   const filtered = _stories.filter((story) => {
     const visibilityMatched =

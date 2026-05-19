@@ -92,3 +92,27 @@
 - 백엔드가 연결된 것처럼 표현하지 않습니다.
 - 현재 필터링은 브라우저 메모리의 Mock 데이터 기준입니다.
 - 실제 서버 검색, 페이지네이션, 정렬은 Spring Boot API 연결 후 구현해야 합니다.
+
+## 20차 화면/API 매핑 최종 점검
+
+20차에서는 화면별 API 연결 후보를 별도 문서로 분리했습니다.
+
+- 상세 문서: [`docs/api-screen-map.md`](api-screen-map.md)
+- 목적: 화면, 프론트 함수, Spring Boot endpoint 후보, 현재 Mock 상태를 한 표에서 확인
+- 연결 원칙: 페이지 컴포넌트는 `fetch`를 직접 호출하지 않고 `src/services/api.ts`만 사용
+- 우선 연결 대상: 접근성 제보 목록/상태 변경, 도움 요청 목록/상태 변경
+
+## 21차 백엔드 연결 전 준비
+
+21차 기준으로 실제 API 연결 전 프론트에서 준비된 항목은 다음과 같습니다.
+
+| 항목 | 상태 |
+|---|---|
+| 공통 응답 타입 | `ApiResponse<T>`, `ApiError` 준비 |
+| 목록 Query 타입 | `ReportQuery`, `HelpRequestQuery`, `StoryQuery`, `ImprovementTaskQuery` 준비 |
+| URL query 재현 | `reports`, `help-requests`, `stories`, `workflow` 적용 |
+| Mock 변경 함수 | 제보/도움요청/경험피드/워크플로우 상태 변경 함수 준비 |
+| 로딩/빈 상태 | `PageState` 공통 컴포넌트 적용 |
+| Mock 동기화 표시 | `OperationalStatus` 공통 컴포넌트 적용 |
+
+실제 백엔드 연결 단계에서는 이 구조를 유지하고, `delay()`와 Mock 배열 조작 부분만 HTTP client로 교체하는 것이 좋습니다.

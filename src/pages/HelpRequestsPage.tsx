@@ -1,9 +1,13 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Topbar } from "../components/Topbar";
-import { getHelpRequests } from "../services/api";
+import { getHelpRequests, updateHelpRequestStatus } from "../services/api";
 import type { HelpRequest, HelpRequestStatus } from "../types";
 import { HelpStatusBadge } from "../components/StatusBadge";
 import { ToastContext } from "../App";
+import { ConfirmModal } from "../components/ConfirmModal";
+import { OperationalStatus } from "../components/OperationalStatus";
+import { PageState } from "../components/PageState";
 
 const FILTERS: { key: HelpRequestStatus | "all"; label: string }[] = [
   { key: "all", label: "전체" },
@@ -22,17 +26,38 @@ const STATUS_ACTIONS: HelpRequestStatus[] = [
 
 export const HelpRequestsPage: React.FC = () => {
   const { showToast } = useContext(ToastContext);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedSelectedId = searchParams.get("selected");
   const [items, setItems] = useState<HelpRequest[]>([]);
-  const [filter, setFilter] = useState<HelpRequestStatus | "all">("all");
+  const [filter, setFilter] = useState<HelpRequestStatus | "all">(
+    helpStatusFromParam(searchParams.get("status"))
+  );
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(searchParams.get("q") ?? "");
+  const [isLoading, setIsLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [confirmAction, setConfirmAction] = useState<{
+    title: string;
+    description: string;
+    confirmText: string;
+    tone?: "default" | "danger";
+    run: () => void;
+  } | null>(null);
 
   useEffect(() => {
-    getHelpRequests().then((requests) => {
+    setIsLoading(true);
+    getHelpRequests({
+      status: filter,
+      query,
+    }).then((requests) => {
       setItems(requests);
-      setSelectedId(requests[0]?.id ?? null);
+      const nextId = requests.some((item) => item.id === requestedSelectedId)
+        ? requestedSelectedId
+        : requests[0]?.id ?? null;
+      setSelectedId(nextId);
+      setIsLoading(false);
     });
-  }, []);
+  }, [filter, query, reloadKey, requestedSelectedId]);
 
   const filtered = useMemo(
     () => {
@@ -62,14 +87,43 @@ export const HelpRequestsPage: React.FC = () => {
     [items, selectedId]
   );
 
+  const performStatusUpdate = async (status: HelpRequestStatus) => {
+    if (!selected) return;
+    const updated = await updateHelpRequestStatus(selected.id, status);
+    if (updated) {
+      setItems((cur) => cur.map((item) => (item.id === updated.id ? updated : item)));
+      showToast(
+        `도움 요청 상태가 "${helpStatusLabel(status)}"(으)로 변경되었습니다. Mock 상태입니다.`
+      );
+    }
+  };
+
   const updateStatus = (status: HelpRequestStatus) => {
     if (!selected) return;
-    setItems((cur) =>
-      cur.map((item) => (item.id === selected.id ? { ...item, status } : item))
-    );
-    showToast(
-      `도움 요청 상태가 "${helpStatusLabel(status)}"(으)로 변경되었습니다. Mock 상태입니다.`
-    );
+    if (status === "responded" || status === "cancelled") {
+      setConfirmAction({
+        title: `도움 요청을 "${helpStatusLabel(status)}" 상태로 바꿀까요?`,
+        description:
+          status === "cancelled"
+            ? "취소 처리는 미응답/안전 이력과 연결될 수 있어 확인이 필요합니다."
+            : "응답 완료 처리는 평균 응답 시간과 처리 로그에 반영될 작업입니다.",
+        confirmText: helpStatusLabel(status),
+        tone: status === "cancelled" ? "danger" : "default",
+        run: () => void performStatusUpdate(status),
+      });
+      return;
+    }
+    void performStatusUpdate(status);
+  };
+
+  const updateQueryParam = (key: string, value: string | null) => {
+    const next = new URLSearchParams(searchParams);
+    if (!value || value === "all") {
+      next.delete(key);
+    } else {
+      next.set(key, value);
+    }
+    setSearchParams(next, { replace: true });
   };
 
   const trend = [4, 6, 5, 8, 9, 7, 12];
@@ -89,6 +143,11 @@ export const HelpRequestsPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        <OperationalStatus
+          title="도움 요청 동기화 상태"
+          onRetry={() => setReloadKey((key) => key + 1)}
+        />
 
         <div className="help-kpi-grid">
           <div className="kpi">
@@ -127,7 +186,10 @@ export const HelpRequestsPage: React.FC = () => {
           <input
             className="search-input"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              updateQueryParam("q", e.target.value.trim() || null);
+            }}
             placeholder="위치, 도움 유형, 메모, 센터 판단 검색"
           />
           <span className="small-muted">
@@ -140,7 +202,10 @@ export const HelpRequestsPage: React.FC = () => {
             <button
               key={f.key}
               className={"filter" + (filter === f.key ? " active" : "")}
-              onClick={() => setFilter(f.key)}
+              onClick={() => {
+                setFilter(f.key);
+                updateQueryParam("status", f.key);
+              }}
               style={{ cursor: "pointer", border: 0 }}
             >
               {f.label}
@@ -150,6 +215,13 @@ export const HelpRequestsPage: React.FC = () => {
 
         <div className="split">
           <div className="panel" style={{ padding: 0, overflow: "hidden" }}>
+            {isLoading ? (
+              <PageState
+                kind="loading"
+                title="도움 요청을 불러오는 중입니다"
+                description="현재는 Mock 목록 조회입니다. 실시간 알림과 상태 동기화는 백엔드 붙여야 함."
+              />
+            ) : (
             <table className="table">
               <thead>
                 <tr>
@@ -167,7 +239,10 @@ export const HelpRequestsPage: React.FC = () => {
                   <tr
                     key={h.id}
                     className={h.id === selectedId ? "selected" : ""}
-                    onClick={() => setSelectedId(h.id)}
+                    onClick={() => {
+                      setSelectedId(h.id);
+                      setSearchParams({ selected: h.id });
+                    }}
                   >
                     <td className="small-muted">{h.createdAt}</td>
                     <td>
@@ -188,8 +263,19 @@ export const HelpRequestsPage: React.FC = () => {
                 ))}
               </tbody>
             </table>
-            {filtered.length === 0 && (
-              <div className="empty-state">해당 상태의 도움 요청이 없습니다.</div>
+            )}
+            {!isLoading && filtered.length === 0 && (
+              <PageState
+                kind="empty"
+                title="조건에 맞는 도움 요청이 없습니다"
+                description="필터를 초기화하거나 다른 검색어를 입력해 주세요. 실제 서버 검색은 백엔드 붙여야 함."
+                actionLabel="필터 초기화"
+                onAction={() => {
+                  setFilter("all");
+                  setQuery("");
+                  setSearchParams({}, { replace: true });
+                }}
+              />
             )}
           </div>
 
@@ -270,6 +356,18 @@ export const HelpRequestsPage: React.FC = () => {
           </div>
         </div>
       </main>
+      <ConfirmModal
+        open={Boolean(confirmAction)}
+        title={confirmAction?.title ?? ""}
+        description={confirmAction?.description ?? ""}
+        confirmText={confirmAction?.confirmText}
+        tone={confirmAction?.tone}
+        onCancel={() => setConfirmAction(null)}
+        onConfirm={() => {
+          confirmAction?.run();
+          setConfirmAction(null);
+        }}
+      />
     </>
   );
 };
@@ -281,4 +379,10 @@ function helpStatusLabel(status: HelpRequestStatus): string {
     cancelled: "취소됨",
     center_check: "센터 확인 필요",
   }[status];
+}
+
+function helpStatusFromParam(value: string | null): HelpRequestStatus | "all" {
+  return ["requesting", "responded", "cancelled", "center_check"].includes(value ?? "")
+    ? (value as HelpRequestStatus)
+    : "all";
 }

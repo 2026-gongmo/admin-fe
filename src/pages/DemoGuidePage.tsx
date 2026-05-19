@@ -99,6 +99,34 @@ const PRE_DEMO_CHECKS = [
   "백엔드 추가 필요 문구가 실제 연동처럼 보이지 않게 표시되는지 확인",
 ];
 
+const DEMO_ROUTES = [
+  {
+    label: "관리자 홈",
+    route: "/dashboard",
+    check: "오늘 처리할 일, KPI, AI 우선 조치 추천",
+  },
+  {
+    label: "제보 상세 직접 진입",
+    route: "/reports?selected=r_1",
+    check: "중앙도서관 제보, 중복 후보, ConfirmModal",
+  },
+  {
+    label: "도움 요청 직접 진입",
+    route: "/help-requests?selected=h_1",
+    check: "중앙도서관 2층 요청, 응답 완료 확인 모달",
+  },
+  {
+    label: "워크플로우 필터",
+    route: "/workflow?stage=reviewing",
+    check: "센터 검토 단계만 표시, 단계 변경 모달",
+  },
+  {
+    label: "경험 피드 검색",
+    route: "/stories?q=조별과제",
+    check: "익명화 검수 필요 사례 설명",
+  },
+];
+
 const BACKEND_TODOS = [
   "인증/인가: Spring Security/JWT 또는 세션 로그인",
   "제보 저장: 상태, 담당자, 우선순위, 처리 메모 DB 저장",
@@ -151,7 +179,7 @@ export const DemoGuidePage: React.FC = () => {
 
         <div className="demo-steps">
           {STEPS.map((step, index) => (
-            <div className="demo-step" key={step.route}>
+            <div className="demo-step" key={`${step.route}-${index}`}>
               <div className="num">{index + 1}</div>
               <div>
                 <div className="demo-title">{step.title}</div>
@@ -176,6 +204,49 @@ export const DemoGuidePage: React.FC = () => {
         </div>
 
         <div className="demo-grid mt-18">
+          <div className="panel">
+            <div className="panel-h">
+              <h3>바로 열 시연 라우트</h3>
+              <span className="mock-pill">18차 QA</span>
+            </div>
+            <div className="route-qa-list">
+              {DEMO_ROUTES.map((item) => (
+                <button
+                  className="route-qa-card"
+                  key={item.route}
+                  onClick={() => navigate(item.route)}
+                >
+                  <div>
+                    <b>{item.label}</b>
+                    <span>{item.check}</span>
+                  </div>
+                  <code>#{item.route}</code>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="panel">
+            <div className="panel-h">
+              <h3>시연 중 말할 주의점</h3>
+              <span className="backend-needed">정확성 표시</span>
+            </div>
+            <div className="quality-list">
+              <div>
+                <b>현재는 Mock 프론트입니다</b>
+                <span>검색, 상태 변경, 모달, 라우팅은 동작하지만 실제 DB 저장은 아직 아닙니다.</span>
+              </div>
+              <div>
+                <b>Spring Boot 연결 전제입니다</b>
+                <span>`src/services/api.ts` 경계를 유지해 나중에 HTTP client로 교체할 수 있게 만들었습니다.</span>
+              </div>
+              <div>
+                <b>관리자 웹의 목적</b>
+                <span>학생 앱에서 쌓인 제보·공감·도움 요청을 학교 개선 근거로 전환하는 운영 화면입니다.</span>
+              </div>
+            </div>
+          </div>
+
           <div className="panel">
             <div className="panel-h">
               <h3>발표 멘트</h3>

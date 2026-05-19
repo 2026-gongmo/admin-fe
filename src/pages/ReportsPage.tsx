@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Topbar } from "../components/Topbar";
 import {
   getPublicDataComparisons,
@@ -17,6 +18,9 @@ import {
   UrgencyBadge,
 } from "../components/StatusBadge";
 import { ToastContext } from "../App";
+import { ConfirmModal } from "../components/ConfirmModal";
+import { OperationalStatus } from "../components/OperationalStatus";
+import { PageState } from "../components/PageState";
 
 const STATUSES: { key: ReportStatus | "all"; label: string }[] = [
   { key: "all", label: "전체" },
@@ -79,11 +83,17 @@ const COVERAGE_CLASS: Record<PublicDataCoverage, string> = {
 
 export const ReportsPage: React.FC = () => {
   const { showToast } = useContext(ToastContext);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedSelectedId = searchParams.get("selected");
   const [reports, setReports] = useState<AccessibilityReport[]>([]);
   const [comparisons, setComparisons] = useState<PublicDataComparison[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<ReportStatus | "all">("all");
-  const [query, setQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState<ReportStatus | "all">(
+    statusFromParam(searchParams.get("status"))
+  );
+  const [query, setQuery] = useState(searchParams.get("q") ?? "");
+  const [isLoading, setIsLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
   const [processMemo, setProcessMemo] = useState("");
   const [processReason, setProcessReason] = useState(PROCESS_REASONS[0]);
   const [department, setDepartment] = useState(DEPARTMENTS[0]);
@@ -94,14 +104,29 @@ export const ReportsPage: React.FC = () => {
     "재발 방지 조치": false,
     "리포트 반영": true,
   });
+  const [confirmAction, setConfirmAction] = useState<{
+    title: string;
+    description: string;
+    confirmText: string;
+    tone?: "default" | "danger";
+    run: () => void;
+  } | null>(null);
 
   useEffect(() => {
-    getReports().then((r) => {
+    setIsLoading(true);
+    getReports({
+      status: filterStatus,
+      query,
+    }).then((r) => {
       setReports(r);
-      setSelectedId(r[0]?.id ?? null);
+      const nextId = r.some((item) => item.id === requestedSelectedId)
+        ? requestedSelectedId
+        : r[0]?.id ?? null;
+      setSelectedId(nextId);
+      setIsLoading(false);
     });
     getPublicDataComparisons().then(setComparisons);
-  }, []);
+  }, [filterStatus, query, reloadKey, requestedSelectedId]);
 
   const selected = useMemo(
     () => reports.find((r) => r.id === selectedId) ?? null,
@@ -133,14 +158,43 @@ export const ReportsPage: React.FC = () => {
         : null,
     [comparisons, selected]
   );
+  const similarReports = useMemo(() => {
+    if (!selected) return [];
+    const strict = reports.filter(
+      (report) =>
+        report.id !== selected.id &&
+        (report.buildingName === selected.buildingName ||
+          report.problemType === selected.problemType)
+    );
+    return (strict.length > 0 ? strict : reports.filter((report) => report.id !== selected.id))
+      .slice(0, 3);
+  }, [reports, selected]);
 
-  const onStatusChange = async (status: ReportStatus) => {
+  const performStatusChange = async (status: ReportStatus) => {
     if (!selected) return;
     const updated = await updateReportStatus(selected.id, status);
     if (updated) {
       setReports((cur) => cur.map((r) => (r.id === updated.id ? updated : r)));
       showToast(`상태가 "${labelOf(status)}"(으)로 변경되었습니다.`);
     }
+  };
+
+  const onStatusChange = (status: ReportStatus) => {
+    if (!selected) return;
+    if (status === "scheduled" || status === "resolved") {
+      setConfirmAction({
+        title: `"${labelOf(status)}" 상태로 변경할까요?`,
+        description:
+          status === "resolved"
+            ? "해결됨 처리는 리포트와 감사 로그에 남아야 하는 작업입니다."
+            : "조치 예정 처리는 시설팀 전달 흐름과 연결되는 작업입니다.",
+        confirmText: `${labelOf(status)} 처리`,
+        tone: status === "resolved" ? "danger" : "default",
+        run: () => void performStatusChange(status),
+      });
+      return;
+    }
+    void performStatusChange(status);
   };
 
   const onAssigneeChange = (assignee: string) => {
@@ -166,6 +220,16 @@ export const ReportsPage: React.FC = () => {
 
   const saveProcessMemo = () => {
     showToast("처리 메모 저장은 Mock 동작입니다. 실제 저장은 백엔드 붙여야 함.");
+  };
+
+  const updateQueryParam = (key: string, value: string | null) => {
+    const next = new URLSearchParams(searchParams);
+    if (!value || value === "all") {
+      next.delete(key);
+    } else {
+      next.set(key, value);
+    }
+    setSearchParams(next, { replace: true });
   };
 
   return (
@@ -196,11 +260,19 @@ export const ReportsPage: React.FC = () => {
           </div>
         </div>
 
+        <OperationalStatus
+          title="제보 목록 동기화 상태"
+          onRetry={() => setReloadKey((key) => key + 1)}
+        />
+
         <div className="toolbar">
           <input
             className="search-input"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              updateQueryParam("q", e.target.value.trim() || null);
+            }}
             placeholder="건물명, 문제유형, 제보 내용, 담당자 검색"
           />
           <span className="small-muted">
@@ -219,7 +291,10 @@ export const ReportsPage: React.FC = () => {
             <button
               key={s.key}
               className={"filter" + (filterStatus === s.key ? " active" : "")}
-              onClick={() => setFilterStatus(s.key)}
+              onClick={() => {
+                setFilterStatus(s.key);
+                updateQueryParam("status", s.key);
+              }}
               style={{ cursor: "pointer", border: 0 }}
             >
               {s.label}
@@ -229,6 +304,13 @@ export const ReportsPage: React.FC = () => {
 
         <div className="split">
           <div className="panel" style={{ padding: 0, overflow: "hidden" }}>
+            {isLoading ? (
+              <PageState
+                kind="loading"
+                title="제보 목록을 불러오는 중입니다"
+                description="Mock API 지연을 반영한 상태입니다. 실제 서버 로딩/에러 처리는 백엔드 붙여야 함."
+              />
+            ) : (
             <table className="table">
               <thead>
                 <tr>
@@ -248,7 +330,10 @@ export const ReportsPage: React.FC = () => {
                   <tr
                     key={r.id}
                     className={r.id === selectedId ? "selected" : ""}
-                    onClick={() => setSelectedId(r.id)}
+                    onClick={() => {
+                      setSelectedId(r.id);
+                      setSearchParams({ selected: r.id });
+                    }}
                   >
                     <td>
                       <ReportStatusBadge status={r.status} />
@@ -280,10 +365,19 @@ export const ReportsPage: React.FC = () => {
                 ))}
               </tbody>
             </table>
-            {filtered.length === 0 && (
-              <div style={{ padding: 30, textAlign: "center", color: "var(--sub)" }}>
-                해당 상태의 제보가 없습니다.
-              </div>
+            )}
+            {!isLoading && filtered.length === 0 && (
+              <PageState
+                kind="empty"
+                title="검색 조건에 맞는 제보가 없습니다"
+                description="필터를 초기화하거나 다른 검색어를 입력해 주세요. 서버 검색은 백엔드 붙여야 함."
+                actionLabel="필터 초기화"
+                onAction={() => {
+                  setFilterStatus("all");
+                  setQuery("");
+                  setSearchParams({}, { replace: true });
+                }}
+              />
             )}
           </div>
 
@@ -393,6 +487,37 @@ export const ReportsPage: React.FC = () => {
                     <div className="v">{selected.aiSuggestion}</div>
                   </div>
                 )}
+
+                <div className="ops-grid">
+                  <div className="field-l">중복/유사 제보 후보</div>
+                  {similarReports.map((item) => (
+                    <div className="similar-card" key={item.id}>
+                      <div>
+                        <b>{item.buildingName} · {item.problemType}</b>
+                        <span>{item.reportCount}건 · 공감 {item.empathyCount}명</span>
+                      </div>
+                      <div className="row-flex">
+                        <button
+                          className="h-btn"
+                          onClick={() =>
+                            showToast("중복 제보 병합은 Mock 동작입니다. 실제 병합 저장은 백엔드 붙여야 함.")
+                          }
+                        >
+                          병합
+                        </button>
+                        <button
+                          className="h-btn"
+                          onClick={() =>
+                            showToast("대표 제보 지정은 Mock 동작입니다. 실제 저장은 백엔드 붙여야 함.")
+                          }
+                        >
+                          대표 지정
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  <span className="backend-needed">중복 판정/병합 저장은 백엔드 붙여야 함</span>
+                </div>
 
                 <div className="draft-card">
                   <div className="field-l">개선 요청서 초안</div>
@@ -535,6 +660,18 @@ export const ReportsPage: React.FC = () => {
           </div>
         </div>
       </main>
+      <ConfirmModal
+        open={Boolean(confirmAction)}
+        title={confirmAction?.title ?? ""}
+        description={confirmAction?.description ?? ""}
+        confirmText={confirmAction?.confirmText}
+        tone={confirmAction?.tone}
+        onCancel={() => setConfirmAction(null)}
+        onConfirm={() => {
+          confirmAction?.run();
+          setConfirmAction(null);
+        }}
+      />
     </>
   );
 };
@@ -546,6 +683,12 @@ function labelOf(s: ReportStatus): string {
     scheduled: "조치 예정",
     resolved: "해결됨",
   }[s];
+}
+
+function statusFromParam(value: string | null): ReportStatus | "all" {
+  return ["received", "checking", "scheduled", "resolved"].includes(value ?? "")
+    ? (value as ReportStatus)
+    : "all";
 }
 
 function urgencyLabel(urgency: Urgency): string {

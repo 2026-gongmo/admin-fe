@@ -112,6 +112,9 @@ Spring Boot API -> src/services/api.ts -> src/pages/*
 | [`docs/api-plan.md`](docs/api-plan.md) | 화면별 API 연동 계획 |
 | [`docs/backend-todo.md`](docs/backend-todo.md) | 백엔드 추가 필요 목록 |
 | [`docs/backend-design.md`](docs/backend-design.md) | Spring Boot 백엔드 설계 초안 |
+| [`docs/api-screen-map.md`](docs/api-screen-map.md) | 화면별 API endpoint 매핑 최종안 |
+| [`docs/frontend-handoff.md`](docs/frontend-handoff.md) | 프론트 최종 인계와 백엔드 연결 전 확인 |
+| [`docs/demo-assets.md`](docs/demo-assets.md) | 발표자료용 캡처와 설명 |
 | [`docs/demo-script.md`](docs/demo-script.md) | 발표 시연 스크립트 |
 | [`docs/qa-checklist.md`](docs/qa-checklist.md) | 빌드/브라우저/보안 QA 체크리스트 |
 
@@ -133,6 +136,14 @@ Spring Boot API -> src/services/api.ts -> src/pages/*
 | 12차 | 최종 발표 시연 모드 |
 | 13차 | README, API 계획, 백엔드 TODO, QA 체크리스트 문서화 |
 | 14차 | 프론트 API 전환 준비 타입/Query 구조 보강 |
+| 15차 | 관리자 운영 UX, 확인 모달, 오늘 처리할 일, 중복 제보 후보 보강 |
+| 16차 | 로딩/빈 상태, Mock 재시도, 동기화 상태, 권한 제한 샘플 보강 |
+| 17차 | 검색/필터 URL query 동기화, Mock service query 호출 구조 보강 |
+| 18차 | 발표 시연 라우트, 시연 QA, 정확성 안내 문구 보강 |
+| 19차 | GitHub 업로드 전 보안/빌드 확인 및 커밋/푸시 |
+| 20차 | 화면별 API endpoint 매핑 최종 문서화 |
+| 21차 | 백엔드 연결 전 프론트 인계 문서 작성 |
+| 22차 | 발표자료용 시연 캡처/설명 문서 정리 |
 
 ## 업로드 전 주의사항
 

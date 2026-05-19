@@ -1,9 +1,12 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Topbar } from "../components/Topbar";
 import { getStoriesForAdmin, updateStoryVisibility } from "../services/api";
 import type { Story } from "../types";
 import { VisibilityBadge } from "../components/StatusBadge";
 import { ToastContext } from "../App";
+import { OperationalStatus } from "../components/OperationalStatus";
+import { PageState } from "../components/PageState";
 
 const PRIVACY_REVIEWS: Record<
   string,
@@ -42,12 +45,19 @@ const PRIVACY_REVIEWS: Record<
 
 export const StoriesPage: React.FC = () => {
   const { showToast } = useContext(ToastContext);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [stories, setStories] = useState<Story[]>([]);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(searchParams.get("q") ?? "");
+  const [isLoading, setIsLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    getStoriesForAdmin().then(setStories);
-  }, []);
+    setIsLoading(true);
+    getStoriesForAdmin({ query }).then((items) => {
+      setStories(items);
+      setIsLoading(false);
+    });
+  }, [query, reloadKey]);
 
   const filteredStories = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -97,11 +107,26 @@ export const StoriesPage: React.FC = () => {
           </div>
         </div>
 
+        <OperationalStatus
+          title="경험 피드 검수 동기화 상태"
+          onRetry={() => setReloadKey((key) => key + 1)}
+        />
+
         <div className="toolbar">
           <input
             className="search-input"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setQuery(value);
+              const next = new URLSearchParams(searchParams);
+              if (value.trim()) {
+                next.set("q", value.trim());
+              } else {
+                next.delete("q");
+              }
+              setSearchParams(next, { replace: true });
+            }}
             placeholder="제목, 본문, 건물명, 태그, AI 검수 메모 검색"
           />
           <span className="small-muted">
@@ -110,7 +135,14 @@ export const StoriesPage: React.FC = () => {
         </div>
 
         <div className="story-admin-grid">
-          {filteredStories.map((s) => {
+          {isLoading && (
+            <PageState
+              kind="loading"
+              title="경험 피드를 불러오는 중입니다"
+              description="현재는 Mock API 기준입니다. 원문/공개본 저장과 검수 이력은 백엔드 붙여야 함."
+            />
+          )}
+          {!isLoading && filteredStories.map((s) => {
             const totalReactions =
               s.reactions.first_known +
               s.reactions.empathize +
@@ -252,8 +284,17 @@ export const StoriesPage: React.FC = () => {
               </div>
             );
           })}
-          {filteredStories.length === 0 && (
-            <div className="empty-state">검색 조건에 맞는 경험 피드가 없습니다.</div>
+          {!isLoading && filteredStories.length === 0 && (
+            <PageState
+              kind="empty"
+              title="검색 조건에 맞는 경험 피드가 없습니다"
+              description="검색어를 바꾸거나 필터를 초기화해 주세요. 실제 서버 검색은 백엔드 붙여야 함."
+              actionLabel="검색 초기화"
+              onAction={() => {
+                setQuery("");
+                setSearchParams({}, { replace: true });
+              }}
+            />
           )}
         </div>
       </main>

@@ -13,6 +13,8 @@ import {
   UrgencyBadge,
   HelpStatusBadge,
 } from "../components/StatusBadge";
+import { OperationalStatus } from "../components/OperationalStatus";
+import { PageState } from "../components/PageState";
 import type {
   AdminStats,
   AccessibilityReport,
@@ -29,6 +31,7 @@ export const DashboardPage: React.FC = () => {
   const [help, setHelp] = useState<HelpRequest[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
   const [period, setPeriod] = useState<"today" | "7d" | "30d" | "semester">("7d");
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     Promise.all([
@@ -44,7 +47,7 @@ export const DashboardPage: React.FC = () => {
       setHelp(h);
       setStories(st);
     });
-  }, []);
+  }, [reloadKey]);
 
   const top5 = [...reports]
     .sort((a, b) => b.reportCount - a.reportCount)
@@ -54,6 +57,36 @@ export const DashboardPage: React.FC = () => {
   const topStories = [...stories]
     .sort((a, b) => b.empathyCount - a.empathyCount)
     .slice(0, 3);
+  const todoItems = [
+    {
+      title: "미응답 도움 요청",
+      count: help.filter((item) => item.status === "center_check").length,
+      desc: "센터 확인 필요 상태",
+      to: "/help-requests?selected=h_3",
+      tone: "danger",
+    },
+    {
+      title: "담당자 미배정 제보",
+      count: reports.filter((item) => !item.assignee).length,
+      desc: "담당자 배정 필요",
+      to: "/reports",
+      tone: "warning",
+    },
+    {
+      title: "AI 익명화 검수 필요",
+      count: stories.filter((item) => item.aiReview?.anonymized !== "완료").length,
+      desc: "공개 전 검수 필요",
+      to: "/stories",
+      tone: "warning",
+    },
+    {
+      title: "고위험 미해결 제보",
+      count: reports.filter((item) => item.urgency === "high" && item.status !== "resolved").length,
+      desc: "시설팀 전달 우선",
+      to: "/reports?selected=r_1",
+      tone: "danger",
+    },
+  ];
 
   return (
     <>
@@ -68,8 +101,17 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
+        <OperationalStatus
+          title="대시보드 동기화 상태"
+          onRetry={() => setReloadKey((key) => key + 1)}
+        />
+
         {!stats ? (
-          <div className="empty-state">대시보드 샘플 데이터를 불러오는 중입니다.</div>
+          <PageState
+            kind="loading"
+            title="대시보드 샘플 데이터를 불러오는 중입니다"
+            description="현재는 Mock service layer 기준입니다. 실제 API 실패/재시도 처리는 백엔드 붙여야 함."
+          />
         ) : (
           <div className="kpis">
             <div className="kpi">
@@ -165,6 +207,32 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div className="panel">
+              <div className="panel-h">
+                <h3>오늘 처리할 일</h3>
+                <span className="more">Mock 운영 큐</span>
+              </div>
+              <div className="todo-list">
+                {todoItems.map((item) => (
+                  <button
+                    className="todo-item"
+                    key={item.title}
+                    onClick={() => navigate(item.to)}
+                  >
+                    <span className={`todo-count ${item.tone}`}>{item.count}</span>
+                    <span>
+                      <b>{item.title}</b>
+                      <em>{item.desc}</em>
+                    </span>
+                    <span className="todo-arrow">›</span>
+                  </button>
+                ))}
+              </div>
+              <div className="small-muted mt-10">
+                실제 업무 배정/알림 저장은 백엔드 붙여야 함.
+              </div>
+            </div>
+
             <div className="ai-box">
               <div className="head">AI 우선 조치 추천</div>
               <div className="decision-card">
