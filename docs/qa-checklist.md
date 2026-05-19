@@ -35,6 +35,12 @@ npm run dev -- --host 127.0.0.1
 - [ ] `http://127.0.0.1:5173/#/workflow?selected=task_1`
 - [ ] `http://127.0.0.1:5173/#/stories?q=조별과제`
 
+포트 `5173`이 사용 중이면 아래처럼 `5174`로 실행해도 됩니다.
+
+```bash
+npm run dev -- --host 127.0.0.1 --port 5174
+```
+
 ## 화면 QA
 
 - [ ] 사이드바 메뉴가 정상 이동되는가?
@@ -63,6 +69,28 @@ npm run dev -- --host 127.0.0.1
 - [ ] 발표 모드에서 사이드바가 좁아지고 주요 화면 영역이 넓어지는가?
 - [ ] 시연 가이드의 실제 클릭 순서 버튼이 각 라우트로 이동하는가?
 - [ ] 콘솔 에러가 없는가?
+
+## 발표자료용 캡처 확인
+
+- [ ] `docs/screenshots/dashboard.png`
+- [ ] `docs/screenshots/reports-selected.png`
+- [ ] `docs/screenshots/help-request-selected.png`
+- [ ] `docs/screenshots/workflow.png`
+- [ ] `docs/screenshots/stories-search.png`
+- [ ] `docs/screenshots/monthly-report.png`
+- [ ] `docs/screenshots/settings-api-failure.png`
+- [ ] `docs/screenshots/demo-guide.png`
+- [ ] 캡처 전 Mock API 실패 범위가 `정상` 상태인가?
+- [ ] 캡처 파일에 실제 개인정보, API Key, Token, 학교 내부자료가 보이지 않는가?
+
+## 문서 최종 확인
+
+- [ ] README에 Mock 기반 프론트 MVP임이 명시되어 있는가?
+- [ ] README에 포트폴리오 관점, 맡은 역할, 문제 정의, 기술 선택 이유가 들어가 있는가?
+- [ ] `docs/backend-todo.md`에 백엔드 1차 구현 순서와 프론트 연결 우선순위가 정리되어 있는가?
+- [ ] `docs/api-plan.md`, `docs/api-screen-map.md`가 실제 API 미연동 상태를 명확히 말하는가?
+- [ ] `docs/demo-assets.md`의 캡처 파일명과 실제 파일이 일치하는가?
+- [ ] `docs/frontend-handoff.md`에 34차~36차 완료 내역이 반영되어 있는가?
 
 ## 반응형 확인
 

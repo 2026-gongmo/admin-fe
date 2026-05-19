@@ -1,6 +1,6 @@
 # ONDA 관리자 웹 화면별 API 매핑 최종안
 
-현재 문서는 실제 API 연결 전 프론트 화면과 백엔드 endpoint 후보를 맞추기 위한 20차 점검 결과입니다. 아직 실제 API는 연결하지 않았습니다.
+현재 문서는 실제 API 연결 전 프론트 화면과 백엔드 endpoint 후보를 맞추기 위한 점검 결과입니다. 아직 실제 API는 연결하지 않았으며, 31차 Mock API 실패 UI와 36차 백엔드 연결 우선순위를 함께 반영했습니다.
 
 ## 공통 Query 규칙
 
@@ -32,6 +32,20 @@
 | 워크플로우 | `updateImprovementTaskStage(id, stage)` | `PATCH /api/admin/improvement-tasks/{taskId}/stage` | Mock 저장 |
 | 월간 리포트 | `getMonthlyReport()` | `GET /api/admin/monthly-reports/{yearMonth}` | Mock |
 
+## 실패/에러 UI 매핑
+
+31차에서 실제 백엔드 연결 전에도 API 실패 화면을 검증할 수 있도록 Mock 실패 시뮬레이션을 추가했습니다.
+
+| 프론트 요소 | 역할 | 실제 백엔드 연결 시 처리 |
+|---|---|---|
+| `ApiError` | Mock/API 실패를 공통 에러 객체로 표현 | HTTP status, error code, message를 변환 |
+| `ApiFailureBanner` | 목록 조회 실패 시 상단 안내 표시 | 실제 API 오류, 권한 오류, 네트워크 오류 표시 |
+| `PageState(error)` | 데이터 영역 실패 상태 표시 | 재시도 버튼과 함께 사용 |
+| 실패 Toast | 저장/상태 변경 실패 안내 | `PATCH`, `POST` 실패 시 표시 |
+| `MockApiFailureScope` | `reports`, `helpRequests`, `stories`, `improvementTasks`, `all` 실패 시뮬레이션 | 운영에서는 제거하거나 개발자 도구로만 제한 |
+
+현재 실패 시뮬레이션은 `window.localStorage`의 `onda_mock_api_failure_scope` 값을 사용합니다. 실제 API 연결 전까지는 `fetch`를 사용하지 않습니다.
+
 ## 백엔드 응답 형태 후보
 
 ```json
@@ -57,12 +71,25 @@
 
 1. `GET /api/admin/reports`
 2. `PATCH /api/admin/reports/{reportId}/status`
-3. `GET /api/admin/help-requests`
-4. `PATCH /api/admin/help-requests/{requestId}/status`
-5. `GET /api/admin/stories`
-6. `PATCH /api/admin/stories/{storyId}/visibility`
-7. `GET /api/admin/improvement-tasks`
-8. `PATCH /api/admin/improvement-tasks/{taskId}/stage`
+3. `PATCH /api/admin/reports/{reportId}/assignee`
+4. `PATCH /api/admin/reports/{reportId}/priority`
+5. `POST /api/admin/reports/{reportId}/notes`
+6. `GET /api/admin/help-requests`
+7. `PATCH /api/admin/help-requests/{requestId}/status`
+8. `GET /api/admin/stories`
+9. `PATCH /api/admin/stories/{storyId}/visibility`
+10. `GET /api/admin/improvement-tasks`
+11. `PATCH /api/admin/improvement-tasks/{taskId}/stage`
+12. `GET /api/admin/dashboard`
+
+## 36차 백엔드 연결 메모
+
+- 첫 연결은 `reports` 도메인부터 진행하는 것이 가장 좋습니다.
+- URL query의 `selected`는 프론트 상세 패널 선택용이므로 서버에 보낼 필요가 없습니다.
+- `status`, `q`, `stage` 등 필터 값은 서버 query parameter로 보냅니다.
+- 변경성 API는 응답 후 프론트 목록을 재조회하거나, 응답 DTO로 로컬 상태를 갱신합니다.
+- 모든 변경성 API는 백엔드에서 감사 로그를 남겨야 합니다.
+- 장애 관련 민감정보와 위치정보가 포함될 수 있으므로 인증/인가 없이 API를 먼저 공개하면 안 됩니다.
 
 ## 주의
 

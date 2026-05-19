@@ -116,3 +116,37 @@
 | Mock 동기화 표시 | `OperationalStatus` 공통 컴포넌트 적용 |
 
 실제 백엔드 연결 단계에서는 이 구조를 유지하고, `delay()`와 Mock 배열 조작 부분만 HTTP client로 교체하는 것이 좋습니다.
+
+## 31차 API 실패 UI 준비
+
+31차에서는 실제 백엔드가 없는 상태에서도 API 실패 상황을 발표와 QA에서 확인할 수 있도록 실패 UI를 준비했습니다.
+
+| 항목 | 현재 구현 | 백엔드 연결 후 전환 |
+|---|---|---|
+| `ApiError` | Mock 실패 시 throw | HTTP error response를 변환 |
+| `ApiFailureBanner` | 조회 실패 안내 | 서버 장애, 권한 오류, 네트워크 오류 표시 |
+| 실패 Toast | 저장 실패 시뮬레이션 | `PATCH`, `POST`, `DELETE` 실패 응답 표시 |
+| 설정 화면 실패 범위 | `reports`, `helpRequests`, `stories`, `improvementTasks`, `all` | 개발/스테이징 전용 장애 테스트 옵션 |
+
+현재 실패 상태는 `localStorage` 기반 Mock이며, 실제 `fetch` 또는 외부 API 호출은 없습니다.
+
+## 36차 API 연결 우선순위
+
+프론트 구현을 유지하면서 Spring Boot API를 붙일 때는 아래 순서가 가장 현실적입니다.
+
+| 순서 | API | 이유 |
+|---:|---|---|
+| 1 | `GET /api/admin/reports` | 핵심 목록 화면을 실제 데이터로 전환 |
+| 2 | `PATCH /api/admin/reports/{reportId}/status` | ConfirmModal, Toast, 상세 패널 흐름 검증 |
+| 3 | `PATCH /api/admin/reports/{reportId}/assignee` | 담당자 운영 UI 실제 저장 |
+| 4 | `PATCH /api/admin/reports/{reportId}/priority` | 개선 우선순위 운영 UI 실제 저장 |
+| 5 | `POST /api/admin/reports/{reportId}/notes` | 처리 메모와 관리자 이력 저장 |
+| 6 | `GET /api/admin/help-requests` | 긴급 도움 요청 목록 연결 |
+| 7 | `PATCH /api/admin/help-requests/{requestId}/status` | 요청 종료/응답 완료 저장 |
+| 8 | `GET /api/admin/stories` | 경험 피드 검수 목록 연결 |
+| 9 | `PATCH /api/admin/stories/{storyId}/visibility` | 공개/비공개 검수 저장 |
+| 10 | `GET /api/admin/improvement-tasks` | 개선 워크플로우 연결 |
+| 11 | `PATCH /api/admin/improvement-tasks/{taskId}/stage` | 과제 단계 변경 저장 |
+| 12 | `GET /api/admin/dashboard` | 실제 집계 기반 KPI 연결 |
+
+PDF/CSV 생성, 공공데이터 배치, 실제 AI 익명화 API는 2차 이후로 미뤄도 됩니다.

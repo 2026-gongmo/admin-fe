@@ -105,3 +105,72 @@
 | 4 | PDF/CSV 생성, 파일 업로드, 리포트 이력 |
 | 5 | AI 익명화 실제 API 연결, 고급 추천 모델 |
 
+## 10. 백엔드 1차 구현 순서
+
+프론트가 이미 Mock으로 완성되어 있으므로, 백엔드는 모든 기능을 한 번에 붙이기보다 관리자 웹에서 가장 많이 쓰는 흐름부터 연결하는 것이 좋습니다.
+
+| 순서 | 구현 범위 | 이유 |
+|---:|---|---|
+| 1 | Spring Boot 프로젝트 생성, DB 연결, 공통 응답/에러 구조 | 프론트 `ApiResponse<T>`, `ApiError`와 맞추기 위한 기반 |
+| 2 | 관리자 인증/인가, 역할 모델 | 장애 관련 민감정보와 위치정보 접근 제어가 선행되어야 함 |
+| 3 | Campus/Building seed 데이터 | 제보, 도움 요청, 공공데이터 비교의 기준 데이터 |
+| 4 | 접근성 제보 목록/상세 조회 | 관리자 웹의 핵심 화면을 실제 데이터로 전환 |
+| 5 | 제보 상태/담당자/우선순위/메모 저장 | 운영 화면에서 가장 먼저 필요한 변경성 API |
+| 6 | 관리자 감사 로그 | 민감 데이터 조회/수정 이력을 남기기 위한 필수 운영 기능 |
+| 7 | 도움 요청 목록/상세/센터 판단 저장 | 긴급 도움 요청을 반복 제보와 연결하는 흐름 |
+| 8 | 경험 피드 원문/공개본/검수 상태 저장 | AI 익명화와 공개 검수의 기반 |
+| 9 | 개선 워크플로우 과제 생성/단계 변경 | 제보를 학교 개선 업무로 전환 |
+| 10 | 대시보드 집계 API | 실제 DB 집계 기반 KPI와 우선순위 표시 |
+| 11 | 공공데이터 배치/월간 리포트/PDF 생성 | 2차 이후 확장 기능 |
+
+## 11. 프론트 연결 우선순위
+
+| 우선순위 | 프론트 함수 | 백엔드 endpoint 후보 | 연결 효과 |
+|---:|---|---|---|
+| 1 | `getReports(query?)` | `GET /api/admin/reports` | 제보 관리 화면이 실제 데이터로 전환됨 |
+| 2 | `updateReportStatus(id, status)` | `PATCH /api/admin/reports/{reportId}/status` | 상태 변경/확인 모달/Toast 흐름 검증 가능 |
+| 3 | 담당자/우선순위 변경 | `PATCH /api/admin/reports/{reportId}/assignee`, `/priority` | 관리자 운영성 시연 강화 |
+| 4 | `getHelpRequests(query?)` | `GET /api/admin/help-requests` | 긴급 도움 요청 운영 데이터 연결 |
+| 5 | `updateHelpRequestStatus(id, status)` | `PATCH /api/admin/help-requests/{requestId}/status` | 응답 완료/취소 처리 저장 |
+| 6 | `getStoriesForAdmin(query?)` | `GET /api/admin/stories` | 경험 피드 검수 목록 연결 |
+| 7 | `updateStoryVisibility(id, visibility)` | `PATCH /api/admin/stories/{storyId}/visibility` | 공개/비공개 검수 저장 |
+| 8 | `getImprovementTasks(query?)` | `GET /api/admin/improvement-tasks` | 개선 워크플로우 실제 과제 연결 |
+| 9 | `updateImprovementTaskStage(id, stage)` | `PATCH /api/admin/improvement-tasks/{taskId}/stage` | 과제 단계 변경 저장 |
+| 10 | `getStats()` | `GET /api/admin/dashboard` | 실제 집계 기반 대시보드 전환 |
+
+## 12. 반드시 백엔드 붙여야 함 항목
+
+- 로그인, 세션/JWT, 역할별 API 인가
+- 제보/도움 요청/경험 피드/개선 과제의 실제 저장
+- 담당자, 우선순위, 상태 변경 사유, 처리 메모 저장
+- 관리자 처리 이력과 감사 로그 저장
+- 경험 피드 원문과 공개본 분리 저장
+- AI 익명화 결과와 관리자 검수 결과 저장
+- 첨부파일 업로드, 파일 검증, 저장 경로 관리
+- 공공데이터 동기화 시각과 출처 메타데이터 저장
+- 월간 리포트 PDF/CSV 생성과 다운로드 이력
+
+## 13. 2차 이후로 보류할 항목
+
+아래 기능은 공모전 MVP 이후로 미뤄도 됩니다.
+
+- 실시간 위치 기반 도움 요청 push 알림
+- 사진 기반 단차/경사 자동 판별
+- 실내 정밀 내비게이션
+- 실제 LLM API 기반 AI 익명화 자동화
+- 공공데이터 대량 배치와 장애물 자동 매칭
+- PDF 공문 템플릿 자동 생성
+- 기관별 다중 캠퍼스 권한 관리
+
+## 14. 민감정보/위치정보/장애 관련 정보 보호
+
+관리자 웹이 실제 서비스가 되면 장애 관련 정보, 위치정보, 경험 피드 원문을 다룰 수 있습니다. 따라서 백엔드 구현 전 아래 항목을 설계에 포함해야 합니다.
+
+- 장애 유형, 도움 요청 위치, 경험 피드 원문은 최소 권한 관리자만 조회
+- 경험 피드는 `originalContent`와 `publicContent`를 분리 저장
+- 원문 조회, 공개 처리, 다운로드, 파일 열람은 모두 `audit_logs`에 기록
+- 위치정보는 보관 기간과 삭제 정책을 명확히 설정
+- 운영 로그에 원문, 위치 상세, 사용자 식별 정보를 그대로 남기지 않음
+- 첨부파일은 확장자, MIME 타입, 용량 제한, 악성 파일 검사를 적용
+- 실제 AI API 연결 전에는 민감정보 전송 범위와 보관 정책을 별도 보안 리뷰
+- `.env`, DB password, API Key, Oracle credential, wallet은 GitHub 업로드 금지
