@@ -185,6 +185,10 @@ export const ReportsPage: React.FC = () => {
         : null,
     [comparisons, selected]
   );
+  const selectedIndex = useMemo(
+    () => filtered.findIndex((report) => report.id === selectedId),
+    [filtered, selectedId]
+  );
   const similarReports = useMemo(() => {
     if (!selected) return [];
     const strict = reports.filter(
@@ -259,6 +263,28 @@ export const ReportsPage: React.FC = () => {
     setSearchParams(next, { replace: true });
   };
 
+  const selectReport = (id: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("selected", id);
+    setSelectedId(id);
+    setSearchParams(next, { replace: true });
+    setDetailOpen(true);
+  };
+
+  const moveSelection = (direction: -1 | 1) => {
+    if (selectedIndex < 0 || filtered.length === 0) return;
+    const nextIndex = Math.min(Math.max(selectedIndex + direction, 0), filtered.length - 1);
+    selectReport(filtered[nextIndex].id);
+  };
+
+  const resetFilters = () => {
+    setFilterStatus("all");
+    setQuery("");
+    setSortKey("reportCount");
+    setSortDirection("desc");
+    setSearchParams({}, { replace: true });
+  };
+
   return (
     <>
       <Topbar />
@@ -326,6 +352,9 @@ export const ReportsPage: React.FC = () => {
           >
             {sortDirection === "desc" ? "내림차순" : "오름차순"}
           </button>
+          <button className="h-btn" onClick={resetFilters}>
+            필터 초기화
+          </button>
         </div>
 
         <div
@@ -374,11 +403,7 @@ export const ReportsPage: React.FC = () => {
                   <tr
                     key={r.id}
                     className={r.id === selectedId ? "selected" : ""}
-                    onClick={() => {
-                      setSelectedId(r.id);
-                      setSearchParams({ selected: r.id });
-                      setDetailOpen(true);
-                    }}
+                    onClick={() => selectReport(r.id)}
                   >
                     <td>
                       <ReportStatusBadge status={r.status} />
@@ -418,9 +443,7 @@ export const ReportsPage: React.FC = () => {
                 description="필터를 초기화하거나 다른 검색어를 입력해 주세요. 서버 검색은 백엔드 붙여야 함."
                 actionLabel="필터 초기화"
                 onAction={() => {
-                  setFilterStatus("all");
-                  setQuery("");
-                  setSearchParams({}, { replace: true });
+                  resetFilters();
                 }}
               />
             )}
@@ -443,9 +466,26 @@ export const ReportsPage: React.FC = () => {
                     </div>
                     <div className="small-muted">
                       제보 #{selected.id.toUpperCase()} · {selected.createdAt}
+                      {selectedIndex >= 0 && ` · ${selectedIndex + 1} / ${filtered.length}`}
                     </div>
                   </div>
                   <div className="detail-actions">
+                    <button
+                      className="icon-mini-btn"
+                      onClick={() => moveSelection(-1)}
+                      disabled={selectedIndex <= 0}
+                      aria-label="이전 제보 보기"
+                    >
+                      이전
+                    </button>
+                    <button
+                      className="icon-mini-btn"
+                      onClick={() => moveSelection(1)}
+                      disabled={selectedIndex < 0 || selectedIndex >= filtered.length - 1}
+                      aria-label="다음 제보 보기"
+                    >
+                      다음
+                    </button>
                     <ReportStatusBadge status={selected.status} />
                     <button
                       className="icon-mini-btn"

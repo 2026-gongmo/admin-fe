@@ -92,6 +92,10 @@ export const WorkflowPage: React.FC = () => {
       return a.title.localeCompare(b.title, "ko");
     });
   }, [sortDirection, sortKey, tasks]);
+  const selectedIndex = useMemo(
+    () => sortedTasks.findIndex((task) => task.id === selectedId),
+    [selectedId, sortedTasks]
+  );
 
   const stageCounts = useMemo(
     () =>
@@ -129,6 +133,28 @@ export const WorkflowPage: React.FC = () => {
       next.set(key, value);
     }
     setSearchParams(next, { replace: true });
+  };
+
+  const selectTask = (id: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("selected", id);
+    setSelectedId(id);
+    setSearchParams(next, { replace: true });
+    setDetailOpen(true);
+  };
+
+  const moveSelection = (direction: -1 | 1) => {
+    if (selectedIndex < 0 || sortedTasks.length === 0) return;
+    const nextIndex = Math.min(Math.max(selectedIndex + direction, 0), sortedTasks.length - 1);
+    selectTask(sortedTasks[nextIndex].id);
+  };
+
+  const resetFilters = () => {
+    setStageFilter("all");
+    setQuery("");
+    setSortKey("dueDate");
+    setSortDirection("asc");
+    setSearchParams({}, { replace: true });
   };
 
   return (
@@ -198,6 +224,9 @@ export const WorkflowPage: React.FC = () => {
           >
             {sortDirection === "asc" ? "오름차순" : "내림차순"}
           </button>
+          <button className="h-btn" onClick={resetFilters}>
+            필터 초기화
+          </button>
         </div>
 
         <div className="row-flex" style={{ marginBottom: 12, flexWrap: "wrap" }}>
@@ -236,11 +265,7 @@ export const WorkflowPage: React.FC = () => {
                   <tr
                     key={task.id}
                     className={task.id === selectedId ? "selected" : ""}
-                    onClick={() => {
-                      setSelectedId(task.id);
-                      setSearchParams({ selected: task.id });
-                      setDetailOpen(true);
-                    }}
+                    onClick={() => selectTask(task.id)}
                   >
                     <td>
                       <b>{task.title}</b>
@@ -266,9 +291,7 @@ export const WorkflowPage: React.FC = () => {
                 description="단계 필터를 초기화하거나 검색어를 바꿔 주세요. 실제 서버 검색은 백엔드 붙여야 함."
                 actionLabel="필터 초기화"
                 onAction={() => {
-                  setStageFilter("all");
-                  setQuery("");
-                  setSearchParams({}, { replace: true });
+                  resetFilters();
                 }}
               />
             )}
@@ -285,9 +308,26 @@ export const WorkflowPage: React.FC = () => {
                     </div>
                     <div className="small-muted">
                       {selected.buildingName} · {selected.problemType} · {selected.owner}
+                      {selectedIndex >= 0 && ` · ${selectedIndex + 1} / ${sortedTasks.length}`}
                     </div>
                   </div>
                   <div className="detail-actions">
+                    <button
+                      className="icon-mini-btn"
+                      onClick={() => moveSelection(-1)}
+                      disabled={selectedIndex <= 0}
+                      aria-label="이전 개선 과제 보기"
+                    >
+                      이전
+                    </button>
+                    <button
+                      className="icon-mini-btn"
+                      onClick={() => moveSelection(1)}
+                      disabled={selectedIndex < 0 || selectedIndex >= sortedTasks.length - 1}
+                      aria-label="다음 개선 과제 보기"
+                    >
+                      다음
+                    </button>
                     <span className={`status ${stageClass(selected.stage)}`}>
                       {labelOf(selected.stage)}
                     </span>

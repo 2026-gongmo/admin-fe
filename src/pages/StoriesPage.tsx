@@ -51,6 +51,11 @@ export const StoriesPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
 
+  const resetSearch = () => {
+    setQuery("");
+    setSearchParams({}, { replace: true });
+  };
+
   useEffect(() => {
     setIsLoading(true);
     getStoriesForAdmin({ query }).then((items) => {
@@ -132,6 +137,9 @@ export const StoriesPage: React.FC = () => {
           <span className="small-muted">
             검색 결과 {filteredStories.length}건 · 실제 서버 검색은 백엔드 붙여야 함
           </span>
+          <button className="h-btn" onClick={resetSearch}>
+            필터 초기화
+          </button>
         </div>
 
         <div className="story-admin-grid">
@@ -290,10 +298,7 @@ export const StoriesPage: React.FC = () => {
               title="검색 조건에 맞는 경험 피드가 없습니다"
               description="검색어를 바꾸거나 필터를 초기화해 주세요. 실제 서버 검색은 백엔드 붙여야 함."
               actionLabel="검색 초기화"
-              onAction={() => {
-                setQuery("");
-                setSearchParams({}, { replace: true });
-              }}
+              onAction={resetSearch}
             />
           )}
         </div>

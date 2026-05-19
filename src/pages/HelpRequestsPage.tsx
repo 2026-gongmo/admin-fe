@@ -106,6 +106,10 @@ export const HelpRequestsPage: React.FC = () => {
     () => items.find((item) => item.id === selectedId) ?? null,
     [items, selectedId]
   );
+  const selectedIndex = useMemo(
+    () => filtered.findIndex((item) => item.id === selectedId),
+    [filtered, selectedId]
+  );
 
   const performStatusUpdate = async (status: HelpRequestStatus) => {
     if (!selected) return;
@@ -144,6 +148,28 @@ export const HelpRequestsPage: React.FC = () => {
       next.set(key, value);
     }
     setSearchParams(next, { replace: true });
+  };
+
+  const selectHelpRequest = (id: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("selected", id);
+    setSelectedId(id);
+    setSearchParams(next, { replace: true });
+    setDetailOpen(true);
+  };
+
+  const moveSelection = (direction: -1 | 1) => {
+    if (selectedIndex < 0 || filtered.length === 0) return;
+    const nextIndex = Math.min(Math.max(selectedIndex + direction, 0), filtered.length - 1);
+    selectHelpRequest(filtered[nextIndex].id);
+  };
+
+  const resetFilters = () => {
+    setFilter("all");
+    setQuery("");
+    setSortKey("createdAt");
+    setSortDirection("desc");
+    setSearchParams({}, { replace: true });
   };
 
   const trend = [4, 6, 5, 8, 9, 7, 12];
@@ -236,6 +262,9 @@ export const HelpRequestsPage: React.FC = () => {
           >
             {sortDirection === "desc" ? "내림차순" : "오름차순"}
           </button>
+          <button className="h-btn" onClick={resetFilters}>
+            필터 초기화
+          </button>
         </div>
 
         <div className="row-flex" style={{ marginBottom: 12, flexWrap: "wrap" }}>
@@ -276,11 +305,7 @@ export const HelpRequestsPage: React.FC = () => {
                   <tr
                     key={h.id}
                     className={h.id === selectedId ? "selected" : ""}
-                    onClick={() => {
-                      setSelectedId(h.id);
-                      setSearchParams({ selected: h.id });
-                      setDetailOpen(true);
-                    }}
+                    onClick={() => selectHelpRequest(h.id)}
                   >
                     <td className="small-muted">{h.createdAt}</td>
                     <td>
@@ -309,9 +334,7 @@ export const HelpRequestsPage: React.FC = () => {
                 description="필터를 초기화하거나 다른 검색어를 입력해 주세요. 실제 서버 검색은 백엔드 붙여야 함."
                 actionLabel="필터 초기화"
                 onAction={() => {
-                  setFilter("all");
-                  setQuery("");
-                  setSearchParams({}, { replace: true });
+                  resetFilters();
                 }}
               />
             )}
@@ -328,9 +351,26 @@ export const HelpRequestsPage: React.FC = () => {
                     </div>
                     <div className="small-muted">
                       {selected.location} · {selected.createdAt}
+                      {selectedIndex >= 0 && ` · ${selectedIndex + 1} / ${filtered.length}`}
                     </div>
                   </div>
                   <div className="detail-actions">
+                    <button
+                      className="icon-mini-btn"
+                      onClick={() => moveSelection(-1)}
+                      disabled={selectedIndex <= 0}
+                      aria-label="이전 도움 요청 보기"
+                    >
+                      이전
+                    </button>
+                    <button
+                      className="icon-mini-btn"
+                      onClick={() => moveSelection(1)}
+                      disabled={selectedIndex < 0 || selectedIndex >= filtered.length - 1}
+                      aria-label="다음 도움 요청 보기"
+                    >
+                      다음
+                    </button>
                     <button
                       className="icon-mini-btn"
                       onClick={() => setDetailPinned((value) => !value)}

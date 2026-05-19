@@ -298,6 +298,10 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 11.5px; font-weight: 900;
 }
 .icon-mini-btn:hover { border-color: var(--primary-100); color: var(--primary); }
+.icon-mini-btn:disabled {
+  cursor: not-allowed; opacity: 0.45;
+  color: var(--sub); background: #F8FAFC;
+}
 .detail-collapsed {
   background: #fff; border: 1px dashed var(--line); border-radius: 12px;
   padding: 16px; color: var(--primary);
