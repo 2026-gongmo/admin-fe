@@ -60,3 +60,35 @@
 5. 권한별 메뉴 표시와 버튼 비활성화를 적용합니다.
 6. 월간 리포트 내보내기와 파일 업로드를 마지막에 붙입니다.
 
+## 14차 API 전환 준비
+
+14차에서는 실제 백엔드 호출을 만들지 않고, `src/services/api.ts`에 Spring Boot API로 교체하기 위한 타입과 함수 시그니처만 먼저 정리했습니다.
+
+### 추가된 프론트 API 계약 타입
+
+| 타입 | 목적 | 현재 상태 |
+|---|---|---|
+| `ApiResponse<T>` | Spring Boot 공통 응답 형태 준비 | 타입만 추가, 실제 fetch 미사용 |
+| `ApiError` | API 실패 표준 처리 준비 | 클래스만 추가, 실제 throw 미사용 |
+| `ListQuery` | 목록 검색/페이지/정렬 공통 파라미터 | Mock 필터에 일부 적용 |
+| `ReportQuery` | 접근성 제보 검색/상태/긴급도/담당자 필터 | Mock 필터 적용 |
+| `HelpRequestQuery` | 도움 요청 검색/상태/유형/미응답 필터 | Mock 필터 적용 |
+| `StoryQuery` | 경험 피드 공개범위/익명화/민감정보 필터 | Mock 필터 적용 |
+| `ImprovementTaskQuery` | 개선 과제 단계/담당/건물 필터 | Mock 필터 적용 |
+
+### 변경된 조회 함수
+
+| 함수 | 변경 전 | 변경 후 | 실제 API 연결 시 예상 Query |
+|---|---|---|---|
+| `getReports()` | 전체 Mock 제보 반환 | `getReports(query?)` | `status`, `urgency`, `assignee`, `buildingId`, `problemType`, `query` |
+| `getHelpRequests()` | 전체 Mock 도움 요청 반환 | `getHelpRequests(query?)` | `status`, `type`, `location`, `unresolvedOnly`, `query` |
+| `getStoriesForAdmin()` | 전체 Mock 경험 피드 반환 | `getStoriesForAdmin(query?)` | `visibility`, `anonymized`, `sensitiveInfo`, `reportReady`, `query` |
+| `getImprovementTasks()` | 전체 Mock 개선 과제 반환 | `getImprovementTasks(query?)` | `stage`, `owner`, `buildingName`, `query` |
+
+### 중요한 제한
+
+- 아직 실제 `fetch`는 사용하지 않습니다.
+- `.env` 또는 `VITE_API_BASE_URL`은 만들지 않았습니다.
+- 백엔드가 연결된 것처럼 표현하지 않습니다.
+- 현재 필터링은 브라우저 메모리의 Mock 데이터 기준입니다.
+- 실제 서버 검색, 페이지네이션, 정렬은 Spring Boot API 연결 후 구현해야 합니다.

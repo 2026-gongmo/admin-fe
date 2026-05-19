@@ -111,6 +111,7 @@ Spring Boot API -> src/services/api.ts -> src/pages/*
 |---|---|
 | [`docs/api-plan.md`](docs/api-plan.md) | 화면별 API 연동 계획 |
 | [`docs/backend-todo.md`](docs/backend-todo.md) | 백엔드 추가 필요 목록 |
+| [`docs/backend-design.md`](docs/backend-design.md) | Spring Boot 백엔드 설계 초안 |
 | [`docs/demo-script.md`](docs/demo-script.md) | 발표 시연 스크립트 |
 | [`docs/qa-checklist.md`](docs/qa-checklist.md) | 빌드/브라우저/보안 QA 체크리스트 |
 
@@ -131,6 +132,7 @@ Spring Boot API -> src/services/api.ts -> src/pages/*
 | 11차 | 처리 메모, 사유, 부서, 체크리스트, 첨부파일 Mock |
 | 12차 | 최종 발표 시연 모드 |
 | 13차 | README, API 계획, 백엔드 TODO, QA 체크리스트 문서화 |
+| 14차 | 프론트 API 전환 준비 타입/Query 구조 보강 |
 
 ## 업로드 전 주의사항
 

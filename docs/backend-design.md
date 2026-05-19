@@ -1,0 +1,473 @@
+# ONDA 관리자 웹 백엔드 설계 초안
+
+현재 관리자 웹은 Mock 데이터 기반입니다. 이 문서는 `src/types.ts`, `src/services/api.ts`, `docs/api-plan.md`를 기준으로 Spring Boot 백엔드 API를 붙이기 위한 1차 설계 초안입니다.
+
+## 1. 설계 요약
+
+ONDA 관리자 웹의 백엔드는 장애학생의 접근성 제보, 도움 요청, 경험 피드, 공공데이터 비교 결과를 학교/장애학생지원센터가 운영 데이터로 관리할 수 있게 하는 API 서버입니다.
+
+1차 MVP에서는 모든 기능을 한 번에 구현하지 않고, 관리자 웹에서 이미 보여주는 화면을 실제 데이터로 바꾸는 데 필요한 최소 도메인부터 구현합니다.
+
+### 1차 MVP 핵심 범위
+
+| 우선순위 | 범위 | 이유 |
+|---|---|---|
+| 1 | 관리자 인증/인가 | 민감정보, 위치정보, 장애 관련 데이터를 다루므로 선행 필요 |
+| 2 | 캠퍼스/건물 조회 | 모든 제보와 분석의 기준 데이터 |
+| 3 | 접근성 제보 관리 | 관리자 웹의 핵심 운영 기능 |
+| 4 | 도움 요청 관리 | 안전망 기능과 제보 전환 흐름 |
+| 5 | 경험 피드 검수 | AI 익명화/공개 상태 관리 |
+| 6 | 대시보드 집계 | 공모전 시연과 운영 의사결정에 필요 |
+| 7 | 감사 로그 | 관리자 조회/수정 이력 추적 |
+
+PDF/CSV 생성, 공공데이터 실시간 동기화, AI 실제 연동은 2차 이후로 두는 편이 현실적입니다.
+
+## 2. 도메인 목록
+
+| 도메인 | 설명 | 프론트 타입/화면 |
+|---|---|---|
+| AdminUser | 관리자 계정 | `#/settings` |
+| AdminRole | 관리자 역할 | `#/settings` |
+| Campus | 학교/캠퍼스 | 전체 화면 공통 |
+| Building | 건물과 접근성 기본 정보 | `Building`, `#/dashboard`, `#/reports` |
+| AccessibilityReport | 접근성 제보 | `AccessibilityReport`, `#/reports` |
+| ReportNote | 제보 처리 메모 | `#/reports` |
+| ReportAttachment | 제보 사진/첨부파일 | `#/reports` |
+| HelpRequest | 긴급 도움 요청 | `HelpRequest`, `#/help-requests` |
+| Story | 장애학생 경험 피드 | `Story`, `#/stories` |
+| StoryReview | AI 익명화/관리자 검수 | `#/stories` |
+| PublicDataSource | 공공데이터 출처 | `PublicDataSource`, `#/public-data` |
+| PublicDataComparison | 공공데이터와 현장 제보 비교 결과 | `PublicDataComparison`, `#/public-data` |
+| ImprovementTask | 개선 과제 | `ImprovementTask`, `#/workflow` |
+| MonthlyReport | 월간 리포트 스냅샷 | `#/monthly-report` |
+| AuditLog | 관리자 감사 로그 | `#/settings` |
+
+## 3. ERD 초안
+
+```mermaid
+erDiagram
+    ADMIN_USER {
+        bigint id PK
+        string email
+        string password_hash
+        string name
+        string role
+        bigint campus_id FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    CAMPUS {
+        bigint id PK
+        string name
+        string region
+        datetime created_at
+    }
+
+    BUILDING {
+        bigint id PK
+        bigint campus_id FK
+        string name
+        string description
+        string accessibility_status
+        decimal latitude
+        decimal longitude
+        boolean has_elevator
+        boolean has_ramp
+        boolean has_accessible_restroom
+        boolean has_auto_door
+        datetime created_at
+        datetime updated_at
+    }
+
+    ACCESSIBILITY_REPORT {
+        bigint id PK
+        bigint campus_id FK
+        bigint building_id FK
+        string problem_type
+        text content
+        string urgency
+        string status
+        bigint assignee_id FK
+        string department
+        string status_reason
+        int empathy_count
+        text ai_suggestion
+        datetime created_at
+        datetime updated_at
+    }
+
+    REPORT_NOTE {
+        bigint id PK
+        bigint report_id FK
+        bigint admin_user_id FK
+        text content
+        datetime created_at
+    }
+
+    REPORT_ATTACHMENT {
+        bigint id PK
+        bigint report_id FK
+        string original_name
+        string stored_path
+        string content_type
+        long file_size
+        datetime created_at
+    }
+
+    HELP_REQUEST {
+        bigint id PK
+        bigint campus_id FK
+        bigint building_id FK
+        string type
+        string location
+        string status
+        text memo
+        string center_decision
+        bigint linked_report_id FK
+        datetime created_at
+        datetime closed_at
+    }
+
+    STORY {
+        bigint id PK
+        bigint campus_id FK
+        bigint building_id FK
+        string author_nickname
+        string title
+        text original_content
+        text public_content
+        string category
+        string visibility
+        int empathy_count
+        int comment_count
+        int reported_count
+        datetime created_at
+        datetime updated_at
+    }
+
+    STORY_REVIEW {
+        bigint id PK
+        bigint story_id FK
+        bigint reviewer_id FK
+        string anonymized_status
+        string sensitive_info_status
+        boolean report_ready
+        text note
+        datetime reviewed_at
+    }
+
+    PUBLIC_DATA_SOURCE {
+        bigint id PK
+        string name
+        string provider
+        string category
+        string use_case
+        string status
+        string update_cycle
+        datetime last_synced_at
+    }
+
+    PUBLIC_DATA_COMPARISON {
+        bigint id PK
+        bigint building_id FK
+        bigint source_id FK
+        text public_record
+        text field_report
+        string coverage
+        string risk
+        text action
+        datetime created_at
+    }
+
+    IMPROVEMENT_TASK {
+        bigint id PK
+        bigint campus_id FK
+        bigint building_id FK
+        string title
+        string problem_type
+        string stage
+        string owner_department
+        date due_date
+        text evidence
+        text next_action
+        datetime created_at
+        datetime updated_at
+    }
+
+    MONTHLY_REPORT {
+        bigint id PK
+        bigint campus_id FK
+        string year_month
+        int new_reports
+        int total_empathy
+        int help_requests
+        int resolved
+        int unresolved_high_risk
+        string pdf_path
+        string csv_path
+        datetime created_at
+    }
+
+    AUDIT_LOG {
+        bigint id PK
+        bigint admin_user_id FK
+        string action
+        string target_type
+        bigint target_id
+        string ip_address
+        text detail
+        datetime created_at
+    }
+
+    CAMPUS ||--o{ ADMIN_USER : has
+    CAMPUS ||--o{ BUILDING : has
+    CAMPUS ||--o{ ACCESSIBILITY_REPORT : receives
+    CAMPUS ||--o{ HELP_REQUEST : receives
+    CAMPUS ||--o{ STORY : has
+    BUILDING ||--o{ ACCESSIBILITY_REPORT : has
+    BUILDING ||--o{ HELP_REQUEST : occurs_at
+    BUILDING ||--o{ STORY : mentioned_in
+    BUILDING ||--o{ PUBLIC_DATA_COMPARISON : compared_by
+    BUILDING ||--o{ IMPROVEMENT_TASK : has
+    ACCESSIBILITY_REPORT ||--o{ REPORT_NOTE : has
+    ACCESSIBILITY_REPORT ||--o{ REPORT_ATTACHMENT : has
+    ACCESSIBILITY_REPORT ||--o{ HELP_REQUEST : linked_from
+    ADMIN_USER ||--o{ REPORT_NOTE : writes
+    ADMIN_USER ||--o{ STORY_REVIEW : reviews
+    ADMIN_USER ||--o{ AUDIT_LOG : leaves
+    STORY ||--o{ STORY_REVIEW : reviewed_by
+    PUBLIC_DATA_SOURCE ||--o{ PUBLIC_DATA_COMPARISON : provides
+```
+
+## 4. API 명세 초안
+
+### 공통 응답 형식
+
+```json
+{
+  "success": true,
+  "data": {},
+  "message": null
+}
+```
+
+에러 응답:
+
+```json
+{
+  "success": false,
+  "data": null,
+  "message": "요청한 제보를 찾을 수 없습니다.",
+  "code": "REPORT_NOT_FOUND"
+}
+```
+
+### 프론트 14차 API 전환 준비 반영
+
+관리자 웹은 아직 Mock 상태지만 `src/services/api.ts`에 다음 Query 타입을 준비했습니다.
+
+| 프론트 Query 타입 | 연결 대상 API | 백엔드에서 받을 주요 파라미터 |
+|---|---|---|
+| `ReportQuery` | `GET /api/admin/reports` | `status`, `urgency`, `assignee`, `buildingId`, `problemType`, `query`, `page`, `size`, `sortBy`, `direction` |
+| `HelpRequestQuery` | `GET /api/admin/help-requests` | `status`, `type`, `location`, `unresolvedOnly`, `query`, `page`, `size` |
+| `StoryQuery` | `GET /api/admin/stories` | `visibility`, `anonymized`, `sensitiveInfo`, `reportReady`, `query`, `page`, `size` |
+| `ImprovementTaskQuery` | `GET /api/admin/improvement-tasks` | `stage`, `owner`, `buildingName`, `query`, `page`, `size` |
+
+백엔드 구현 시 위 Query 계약을 우선 맞추면 프론트의 Mock service를 HTTP client로 교체하기 쉽습니다.
+
+### 인증/관리자
+
+| 기능 | Method | Endpoint | 설명 |
+|---|---:|---|---|
+| 로그인 | POST | `/api/admin/auth/login` | 관리자 로그인 |
+| 내 정보 | GET | `/api/admin/me` | 현재 관리자 프로필 |
+| 로그아웃 | POST | `/api/admin/auth/logout` | 세션/JWT 종료 |
+| 감사 로그 | GET | `/api/admin/audit-logs` | 관리자 활동 이력 |
+
+### 대시보드
+
+| 기능 | Method | Endpoint | Query |
+|---|---:|---|---|
+| KPI 조회 | GET | `/api/admin/dashboard` | `campusId`, `from`, `to` |
+| AI 우선 조치 추천 | GET | `/api/admin/recommendations` | `campusId` |
+
+### 건물/캠퍼스
+
+| 기능 | Method | Endpoint | 설명 |
+|---|---:|---|---|
+| 캠퍼스 목록 | GET | `/api/admin/campuses` | 관리자 권한 범위 캠퍼스 |
+| 건물 목록 | GET | `/api/admin/campuses/{campusId}/buildings` | 건물 접근성 상태 포함 |
+| 건물 상세 | GET | `/api/admin/buildings/{buildingId}` | 제보/공감 집계 포함 |
+
+### 접근성 제보
+
+| 기능 | Method | Endpoint | 설명 |
+|---|---:|---|---|
+| 제보 목록 | GET | `/api/admin/reports` | 검색/상태/담당자/우선순위 필터 |
+| 제보 상세 | GET | `/api/admin/reports/{reportId}` | 원문, 처리 이력, 첨부 포함 |
+| 제보 상태 변경 | PATCH | `/api/admin/reports/{reportId}/status` | 상태와 변경 사유 저장 |
+| 담당자 배정 | PATCH | `/api/admin/reports/{reportId}/assignee` | 관리자 ID 저장 |
+| 우선순위 변경 | PATCH | `/api/admin/reports/{reportId}/priority` | `high`, `mid`, `low` |
+| 처리 메모 저장 | POST | `/api/admin/reports/{reportId}/notes` | 관리자 메모 |
+| 첨부파일 업로드 | POST | `/api/admin/reports/{reportId}/attachments` | multipart |
+
+제보 상태 변경 요청 예시:
+
+```json
+{
+  "status": "checking",
+  "reason": "현장 확인 필요",
+  "department": "시설관리팀"
+}
+```
+
+### 도움 요청
+
+| 기능 | Method | Endpoint | 설명 |
+|---|---:|---|---|
+| 도움 요청 목록 | GET | `/api/admin/help-requests` | 위치/유형/상태 검색 |
+| 도움 요청 상세 | GET | `/api/admin/help-requests/{requestId}` | 처리 이력 포함 |
+| 센터 판단 저장 | PATCH | `/api/admin/help-requests/{requestId}/decision` | 제보 전환 여부 판단 |
+| 접근성 제보 연결 | PATCH | `/api/admin/help-requests/{requestId}/linked-report` | 반복 문제 연결 |
+
+### 경험 피드/AI 검수
+
+| 기능 | Method | Endpoint | 설명 |
+|---|---:|---|---|
+| 경험 피드 목록 | GET | `/api/admin/stories` | 제목/본문/태그 검색 |
+| 경험 피드 상세 | GET | `/api/admin/stories/{storyId}` | 원문/공개본 분리 |
+| 공개 상태 변경 | PATCH | `/api/admin/stories/{storyId}/visibility` | `public`, `private`, `center_only` |
+| AI 익명화 요청 | POST | `/api/admin/stories/{storyId}/anonymize` | LLM 연동 후보 |
+| 관리자 검수 저장 | PATCH | `/api/admin/stories/{storyId}/review` | 검수 상태/메모 |
+
+### 공공데이터/반복 분석
+
+| 기능 | Method | Endpoint | 설명 |
+|---|---:|---|---|
+| 공공데이터 출처 | GET | `/api/admin/public-data/sources` | data.go.kr 등 출처 |
+| 비교 결과 | GET | `/api/admin/public-data/comparisons` | 공공데이터와 현장 제보 비교 |
+| 반복 문제 분석 | GET | `/api/admin/analysis/repeated-issues` | 건물/문제 유형별 반복 집계 |
+
+### 개선 워크플로우
+
+| 기능 | Method | Endpoint | 설명 |
+|---|---:|---|---|
+| 개선 과제 목록 | GET | `/api/admin/improvement-tasks` | 단계별 과제 |
+| 개선 과제 생성 | POST | `/api/admin/improvement-tasks` | 제보에서 과제 생성 |
+| 단계 변경 | PATCH | `/api/admin/improvement-tasks/{taskId}/stage` | 워크플로우 변경 |
+
+### 월간 리포트
+
+| 기능 | Method | Endpoint | 설명 |
+|---|---:|---|---|
+| 월간 리포트 조회 | GET | `/api/admin/monthly-reports/{yearMonth}` | 집계 스냅샷 |
+| PDF 생성 | POST | `/api/admin/monthly-reports/{yearMonth}/exports/pdf` | 백엔드 추가 필요 |
+| CSV 생성 | POST | `/api/admin/monthly-reports/{yearMonth}/exports/csv` | 백엔드 추가 필요 |
+
+## 5. Spring Boot 패키지 구조
+
+```text
+onda-admin-api/
+  src/main/java/com/onda/admin/
+    OndaAdminApiApplication.java
+    global/
+      config/
+        SecurityConfig.java
+        CorsConfig.java
+        JpaAuditingConfig.java
+      error/
+        GlobalExceptionHandler.java
+        ErrorCode.java
+        BusinessException.java
+      response/
+        ApiResponse.java
+      security/
+        AdminPrincipal.java
+        JwtTokenProvider.java
+    domain/
+      admin/
+        controller/
+        service/
+        repository/
+        entity/
+        dto/
+      campus/
+      building/
+      report/
+      helprequest/
+      story/
+      publicdata/
+      workflow/
+      monthlyreport/
+      audit/
+    infra/
+      file/
+      ai/
+      publicdata/
+      reportexport/
+  src/main/resources/
+    application.yml
+    application-local.yml
+    application-example.yml
+```
+
+## 6. 보안/개인정보 원칙
+
+장애 관련 정보, 위치정보, 경험 피드 원문은 민감도가 높습니다. 1차 MVP라도 아래 원칙은 설계에 포함해야 합니다.
+
+- 관리자 인증 전에는 어떤 관리자 API도 접근 불가
+- 역할별 권한 분리
+- 경험 피드 원문과 공개본 분리 저장
+- 원문 조회는 최소 권한 관리자만 가능
+- 관리자 조회/수정/내보내기 감사 로그 저장
+- 위치정보는 필요한 기간만 보관
+- 첨부파일은 확장자, 용량, MIME 타입 검증
+- 에러 응답에 내부 경로, SQL, 스택트레이스 노출 금지
+- `.env`, DB 비밀번호, API Key는 GitHub 업로드 금지
+
+## 7. 1차 구현 우선순위
+
+### 1단계: 백엔드 프로젝트 생성
+
+- Spring Boot 3.x
+- Java 17 이상
+- Spring Web
+- Spring Data JPA
+- Validation
+- Spring Security
+- PostgreSQL 또는 MySQL
+- Lombok 선택 가능
+
+### 2단계: 기본 도메인과 조회 API
+
+- Campus
+- Building
+- AccessibilityReport
+- HelpRequest
+- Story
+- AdminUser
+
+우선은 더미 seed 데이터를 DB에 넣고 관리자 웹 Mock 데이터를 API 응답으로 바꾸는 것이 목표입니다.
+
+### 3단계: 관리자 운영 API
+
+- 제보 상태 변경
+- 담당자 배정
+- 우선순위 변경
+- 처리 메모 저장
+- 도움 요청 센터 판단 저장
+- 경험 피드 공개 상태 변경
+
+### 4단계: 감사 로그
+
+관리자가 수정하는 API에는 전부 감사 로그를 남깁니다.
+
+### 5단계: 리포트/공공데이터/AI
+
+- 월간 리포트 집계
+- PDF/CSV 생성
+- 공공데이터 배치 동기화
+- AI 익명화 실제 API 연결
+
+이 단계는 공모전 MVP 이후로 미뤄도 됩니다.
