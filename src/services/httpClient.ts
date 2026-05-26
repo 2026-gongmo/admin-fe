@@ -4,6 +4,7 @@ export type ApiMode = "mock" | "http";
 
 const TOKEN_KEY = "onda_admin_access_token";
 const ADMIN_KEY = "onda_admin_profile";
+const DEMO_PASSWORD = import.meta.env.VITE_DEMO_ADMIN_PASSWORD || "onda1234!";
 
 export function getApiMode(): ApiMode {
   const mode = import.meta.env.VITE_API_MODE;
@@ -12,6 +13,10 @@ export function getApiMode(): ApiMode {
 
 export function getApiBaseUrl(): string {
   return (import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:18080").replace(/\/$/, "");
+}
+
+export function isDemoAutoLoginEnabled(): boolean {
+  return import.meta.env.VITE_DEMO_AUTO_LOGIN !== "false";
 }
 
 export function getStoredToken(): string | null {
@@ -51,34 +56,15 @@ export async function httpRequest<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const headers = new Headers(options.headers);
-  const token = getStoredToken();
-
-  if (!headers.has("Content-Type") && options.body) {
-    headers.set("Content-Type", "application/json");
-  }
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
-
-  let response: Response;
-  try {
-    response = await fetch(`${getApiBaseUrl()}${path}`, {
-      ...options,
-      headers,
-    });
-  } catch {
-    throw new ApiError(
-      "NETWORK_ERROR",
-      "백엔드 서버에 연결하지 못했습니다. Spring Boot 서버와 VITE_API_BASE_URL을 확인해 주세요.",
-      0
-    );
-  }
-
+  const response = await requestOnce(path, options);
   const payload = (await parseJson(response)) as ApiResponse<T> | null;
 
   if (!response.ok) {
     if (response.status === 401) {
+      const refreshed = await refreshDemoSession(path);
+      if (refreshed) {
+        return httpRequest<T>(path, options);
+      }
       clearStoredToken();
     }
     throw new ApiError(
@@ -97,6 +83,92 @@ export async function httpRequest<T>(
   }
 
   return payload.data;
+}
+
+export async function httpDownload(path: string, options: RequestInit = {}): Promise<Blob> {
+  const response = await requestOnce(path, options);
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      const refreshed = await refreshDemoSession(path);
+      if (refreshed) {
+        return httpDownload(path, options);
+      }
+      clearStoredToken();
+    }
+    const payload = (await parseJson(response).catch(() => null)) as
+      | { code?: string; message?: string }
+      | null;
+    throw new ApiError(
+      payload?.code ?? `HTTP_${response.status}`,
+      payload?.message ?? "파일 다운로드에 실패했습니다.",
+      response.status
+    );
+  }
+
+  return response.blob();
+}
+
+async function requestOnce(path: string, options: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(options.headers);
+  const token = getStoredToken();
+
+  if (!headers.has("Content-Type") && options.body) {
+    headers.set("Content-Type", "application/json");
+  }
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  try {
+    return await fetch(`${getApiBaseUrl()}${path}`, {
+      ...options,
+      headers,
+    });
+  } catch {
+    throw new ApiError(
+      "NETWORK_ERROR",
+      "백엔드 서버에 연결하지 못했습니다. Spring Boot 서버와 VITE_API_BASE_URL을 확인해 주세요.",
+      0
+    );
+  }
+}
+
+async function refreshDemoSession(failedPath: string): Promise<boolean> {
+  if (!shouldAttemptDemoReauth(failedPath)) return false;
+
+  const previousAdmin = getStoredAdmin<{ email?: string }>();
+  clearStoredToken();
+
+  try {
+    const response = await requestOnce("/api/admin/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        email: previousAdmin?.email || "center@onda.test",
+        password: DEMO_PASSWORD,
+      }),
+    });
+    if (!response.ok) return false;
+
+    const payload = (await parseJson(response)) as
+      | ApiResponse<{
+          accessToken: string;
+          admin: unknown;
+        }>
+      | null;
+    if (!payload?.success || !payload.data?.accessToken) return false;
+
+    setStoredToken(payload.data.accessToken);
+    setStoredAdmin(payload.data.admin);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function shouldAttemptDemoReauth(path: string): boolean {
+  if (!isDemoAutoLoginEnabled()) return false;
+  return !path.startsWith("/api/admin/auth/");
 }
 
 export function toQueryString(params: Record<string, unknown>): string {

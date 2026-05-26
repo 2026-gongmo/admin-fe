@@ -6,7 +6,7 @@
 
 - 관리자 웹은 공모전 시연용 React + Vite 프론트 MVP로 사용할 수 있습니다.
 - 기본 실행은 Mock 모드이며, `.env` 없이도 동작합니다.
-- `VITE_API_MODE=http`일 때 Spring Boot API 일부를 실제 호출합니다.
+- `VITE_API_MODE=http`일 때 Spring Boot API 주요 조회/저장 기능을 실제 호출합니다.
 - 페이지 컴포넌트는 직접 `fetch`하지 않고 `src/services/api.ts`만 호출합니다.
 - 실제 HTTP 요청은 `src/services/httpClient.ts`에만 둡니다.
 - 검색/필터/상세 선택은 주요 화면에서 URL query로 재현할 수 있습니다.
@@ -80,32 +80,37 @@ VITE_API_MODE=http VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --hos
 |---|---|---|
 | 관리자 로그인 | `POST /api/admin/auth/login` | 연결 |
 | 내 정보 조회 | `GET /api/admin/me` | 연결 |
+| 대시보드 KPI | `GET /api/admin/dashboard/stats` | 연결 |
+| 건물 목록 | `GET /api/admin/buildings` | 연결 |
 | 접근성 제보 목록 | `GET /api/admin/reports` | 연결 |
 | 접근성 제보 상태 변경 | `PATCH /api/admin/reports/{id}/status` | 연결 |
+| 접근성 제보 담당자/우선순위/메모 | `PATCH /assignee`, `PATCH /priority`, `POST /notes` | 연결 |
 | 도움 요청 목록 | `GET /api/admin/help-requests` | 연결 |
 | 도움 요청 상태 변경 | `PATCH /api/admin/help-requests/{id}/status` | 연결 |
+| 도움 요청 센터 판단 | `PATCH /api/admin/help-requests/{id}/decision` | 연결 |
+| 경험 피드 목록/공개 상태 | `GET /api/admin/stories`, `PATCH /api/admin/stories/{id}/visibility` | 연결 |
+| 개선 워크플로우 목록/단계 | `GET /api/admin/improvement-tasks`, `PATCH /api/admin/improvement-tasks/{id}/stage` | 연결 |
+| 월간 리포트 조회/CSV | `GET /api/admin/monthly-report`, `GET /api/admin/monthly-report/export/csv` | 연결 |
+| 반복 분석/추천 | `GET /api/admin/analysis/*`, `GET /api/admin/recommendations` | 연결 |
+| 공공데이터 seed 조회 | `GET /api/admin/public-data/*` | 연결 |
 
-## 아직 Mock 또는 백엔드 추가 필요
+## 아직 Mock이거나 추가 예정인 영역
 
-- 대시보드 KPI 집계
-- 건물 목록과 미니맵 좌표
-- 제보 상세 API
-- 제보 담당자 배정
-- 제보 우선순위 변경
-- 처리 메모 저장
-- 도움 요청 센터 판단 저장
-- 경험 피드 검수
-- 공공데이터 비교
-- 개선 워크플로우
-- 월간 리포트/PDF/CSV 생성
+- 경험 피드 AI 익명화 실제 API
+- 제보/도움 요청 상세 단건 조회와 고급 수정
+- 월간 리포트 PDF 생성, 공유/공문/Notion 전송
+- 파일 업로드/다운로드
+- 중복 제보 병합 저장
+- 전체 data.go.kr 외부 API 배치 동기화
+- 운영 DB 영속화와 production 인증 정책
 
 ## 다음 작업 추천
 
-1. 프론트에서 담당자 배정 `PATCH /api/admin/reports/{id}/assignee` 연결
-2. 우선순위 변경 `PATCH /api/admin/reports/{id}/priority` 연결
-3. 처리 메모 `POST /api/admin/reports/{id}/notes` 연결
-4. 도움 요청 센터 판단 `PATCH /api/admin/help-requests/{id}/decision` 연결
-5. 경험 피드, 공공데이터, 워크플로우 순서로 확장
+1. 제보/도움 요청 상세 단건 조회와 서버 페이징 고도화
+2. 월간 리포트 PDF 생성과 리포트 스냅샷 저장
+3. 제보 첨부파일 업로드/다운로드 연결
+4. 실제 공공데이터 API 키 기반 전체 배치 동기화 연결
+5. 실제 AI 익명화 API 연결 전 보안 리뷰
 
 ## GitHub 업로드 전 확인
 

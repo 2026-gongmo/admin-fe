@@ -9,6 +9,7 @@ import {
   getStoriesForAdmin,
   getModeLabel,
   isHttpMode,
+  getRecommendation,
 } from "../services/api";
 import {
   ReportStatusBadge,
@@ -17,12 +18,14 @@ import {
 } from "../components/StatusBadge";
 import { OperationalStatus } from "../components/OperationalStatus";
 import { PageState } from "../components/PageState";
+import { CampusMap } from "../components/CampusMap";
 import type {
   AdminStats,
   AccessibilityReport,
   Building,
   HelpRequest,
   Story,
+  Recommendation,
 } from "../types";
 
 export const DashboardPage: React.FC = () => {
@@ -32,6 +35,7 @@ export const DashboardPage: React.FC = () => {
   const [reports, setReports] = useState<AccessibilityReport[]>([]);
   const [help, setHelp] = useState<HelpRequest[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
+  const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [period, setPeriod] = useState<"today" | "7d" | "30d" | "semester">("7d");
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -42,12 +46,14 @@ export const DashboardPage: React.FC = () => {
       getReports(),
       getHelpRequests(),
       getStoriesForAdmin(),
-    ]).then(([s, b, r, h, st]) => {
+      getRecommendation(),
+    ]).then(([s, b, r, h, st, rec]) => {
       setStats(s);
       setBuildings(b);
       setReports(r);
       setHelp(h);
       setStories(st);
+      setRecommendation(rec);
     });
   }, [reloadKey]);
 
@@ -99,7 +105,7 @@ export const DashboardPage: React.FC = () => {
             <h1>ONDA 관리자 대시보드</h1>
             <div className="sub">
               {periodLabel(period)} · {getModeLabel()} 기준 ·{" "}
-              {isHttpMode() ? "일부 API 연결됨" : "API 연동 예정"}
+              {isHttpMode() ? "주요 API 연결됨" : "API 연동 예정"}
             </div>
           </div>
         </div>
@@ -113,7 +119,11 @@ export const DashboardPage: React.FC = () => {
           <PageState
             kind="loading"
             title="대시보드 샘플 데이터를 불러오는 중입니다"
-            description="현재는 Mock service layer 기준입니다. 실제 API 실패/재시도 처리는 백엔드 붙여야 함."
+            description={
+              isHttpMode()
+                ? "Spring Boot API 기준입니다. 실시간 알림/업무 배정 저장은 아직 구현 안 됨 · 추가 예정."
+                : "현재는 Mock service layer 기준입니다. 실제 API 실패/재시도 처리는 아직 구현 안 됨 · 추가 예정."
+            }
           />
         ) : (
           <div className="kpis">
@@ -149,28 +159,9 @@ export const DashboardPage: React.FC = () => {
           <div className="panel">
             <div className="panel-h">
               <h3>캠퍼스 제보 밀도</h3>
-              <span className="more">건물별 보기 ›</span>
+              <span className="more">Kakao Map · 건물별 보기 ›</span>
             </div>
-            <div className="mini-map">
-              {buildings.map((b) => (
-                <React.Fragment key={b.id}>
-                  <div
-                    className="pin-w"
-                    style={{
-                      left: `${b.position.x}%`,
-                      top: `${b.position.y}%`,
-                      background: pinColor(b.status),
-                    }}
-                  />
-                  <div
-                    className="label-w"
-                    style={{ left: `${b.position.x}%`, top: `${b.position.y}%` }}
-                  >
-                    {b.name} · {b.reportCount}
-                  </div>
-                </React.Fragment>
-              ))}
-            </div>
+            <CampusMap buildings={buildings} />
 
             <div className="panel-h" style={{ marginTop: 18, marginBottom: 8 }}>
               <h3>반복 제보 TOP 5</h3>
@@ -232,7 +223,7 @@ export const DashboardPage: React.FC = () => {
                 ))}
               </div>
               <div className="small-muted mt-10">
-                실제 업무 배정/알림 저장은 백엔드 붙여야 함.
+                실시간 알림 저장은 아직 구현 안 됨 · 추가 예정.
               </div>
             </div>
 
@@ -241,23 +232,27 @@ export const DashboardPage: React.FC = () => {
               <div className="decision-card">
                 <div>
                   <span className="field-l">1순위 개선 과제</span>
-                  <b>중앙도서관 5층 승강기</b>
+                  <b>{recommendation?.title ?? "추천 데이터를 불러오는 중"}</b>
                 </div>
                 <div>
                   <span className="field-l">판단 근거</span>
-                  <span>제보 32건 · 공감 140명 · 긴급도 높음</span>
+                  <span>{recommendation?.evidence ?? "백엔드 분석 API 또는 Mock 분석 결과를 확인 중입니다."}</span>
                 </div>
                 <div>
                   <span className="field-l">공공데이터 차이</span>
-                  <span>승강기 있음으로 기록되어 있으나 버튼 높이 문제 반복</span>
+                  <span>{recommendation?.publicDataGap ?? "공공데이터 비교 결과 확인 중"}</span>
                 </div>
                 <div>
                   <span className="field-l">추천 조치</span>
-                  <span>보조 버튼 설치, 현장 점검 요청, 시설관리팀 전달</span>
+                  <span>{recommendation?.recommendedAction ?? "추천 조치 생성 중"}</span>
                 </div>
                 <div>
                   <span className="field-l">연동 상태</span>
-                  <span className="backend-needed">백엔드 붙여야 함</span>
+                  <span className="planned-pill">
+                    {isHttpMode()
+                      ? `Spring Boot 추천 API · 신뢰도 ${recommendation?.confidence ?? 0}%`
+                      : `Mock 추천 엔진 · 신뢰도 ${recommendation?.confidence ?? 0}%`}
+                  </span>
                 </div>
               </div>
               <div className="row-flex" style={{ flexWrap: "wrap" }}>
@@ -321,19 +316,6 @@ export const DashboardPage: React.FC = () => {
     </>
   );
 };
-
-function pinColor(status: string) {
-  switch (status) {
-    case "warning":
-      return "#F59E0B";
-    case "blocked":
-      return "#DC2626";
-    case "accessible":
-      return "#16A34A";
-    default:
-      return "#94A3B8";
-  }
-}
 
 function periodLabel(p: "today" | "7d" | "30d" | "semester") {
   switch (p) {

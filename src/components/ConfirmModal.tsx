@@ -29,7 +29,7 @@ export const ConfirmModal: React.FC<Props> = ({
     notice ??
     (isHttpMode()
       ? "현재 API 연결 모드입니다. 연결된 저장 기능은 Spring Boot API에 반영됩니다."
-      : "현재는 Mock 동작입니다. 실제 저장은 백엔드 붙여야 함.");
+      : "현재는 Mock 동작입니다. 실제 저장은 아직 구현 안 됨 · 추가 예정.");
 
   return (
     <div className="modal-backdrop" role="presentation" onClick={onCancel}>

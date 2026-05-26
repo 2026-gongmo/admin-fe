@@ -1,6 +1,6 @@
 # ONDA 관리자 웹 API 연동 계획
 
-현재 관리자 웹은 기본적으로 Mock 데이터 기반이며, `VITE_API_MODE=http`일 때 Spring Boot 백엔드 일부 API를 실제 호출합니다. 아래 표는 현재 연결 상태와 남은 후보를 함께 정리합니다.
+현재 관리자 웹은 기본적으로 Mock 데이터 기반이며, `VITE_API_MODE=http`일 때 Spring Boot 백엔드 주요 API를 실제 호출합니다. 아래 표는 현재 연결 상태와 남은 후보를 함께 정리합니다.
 
 ## 공통 원칙
 
@@ -14,35 +14,39 @@
 
 | 화면 | 기능 | Method | Endpoint 후보 | 상태 |
 |---|---|---:|---|---|
-| 대시보드 | KPI 조회 | GET | `/api/admin/dashboard` | 백엔드 추가 필요 |
-| 대시보드 | AI 우선 조치 추천 | GET | `/api/admin/recommendations` | 백엔드 추가 필요 |
+| 대시보드 | KPI 조회 | GET | `/api/admin/dashboard/stats` | 연결 완료 |
+| 대시보드 | 건물 목록 | GET | `/api/admin/buildings` | 연결 완료 |
+| 대시보드 | AI 우선 조치 추천 | GET | `/api/admin/recommendations` | 연결 완료 |
 | 인증 | 관리자 로그인 | POST | `/api/admin/auth/login` | 34차 연결 완료 |
 | 인증 | 내 정보 조회 | GET | `/api/admin/me` | 34차 연결 완료 |
 | 인증 | 로그아웃 | POST | `/api/admin/auth/logout` | 로컬 토큰 제거 + API 호출 준비 |
 | 접근성 제보 | 제보 목록 | GET | `/api/admin/reports` | 34차 연결 완료 |
-| 접근성 제보 | 제보 상세 | GET | `/api/admin/reports/{reportId}` | 백엔드 추가 필요 |
+| 접근성 제보 | 제보 상세 | GET | `/api/admin/reports/{reportId}` | 아직 구현 안 됨 · 추가 예정 |
 | 접근성 제보 | 상태 변경 | PATCH | `/api/admin/reports/{reportId}/status` | 34차 연결 완료 |
-| 접근성 제보 | 담당자 배정 | PATCH | `/api/admin/reports/{reportId}/assignee` | 백엔드 추가 필요 |
-| 접근성 제보 | 우선순위 변경 | PATCH | `/api/admin/reports/{reportId}/priority` | 백엔드 추가 필요 |
-| 접근성 제보 | 처리 메모 저장 | POST | `/api/admin/reports/{reportId}/notes` | 백엔드 추가 필요 |
-| 접근성 제보 | 첨부파일 업로드 | POST | `/api/admin/reports/{reportId}/attachments` | 백엔드 추가 필요 |
-| 공공데이터 | 데이터 출처 목록 | GET | `/api/admin/public-data/sources` | 백엔드 추가 필요 |
-| 공공데이터 | 현장 제보 비교 | GET | `/api/admin/public-data/comparisons` | 백엔드 추가 필요 |
-| 반복 분석 | 반복 문제 목록 | GET | `/api/admin/analysis/repeated-issues` | 백엔드 추가 필요 |
+| 접근성 제보 | 담당자 배정 | PATCH | `/api/admin/reports/{reportId}/assignee` | 연결 완료 |
+| 접근성 제보 | 우선순위 변경 | PATCH | `/api/admin/reports/{reportId}/priority` | 연결 완료 |
+| 접근성 제보 | 처리 메모 저장 | POST | `/api/admin/reports/{reportId}/notes` | 연결 완료 |
+| 접근성 제보 | 첨부파일 업로드 | POST | `/api/admin/reports/{reportId}/attachments` | 아직 구현 안 됨 · 추가 예정 |
+| 공공데이터 | 데이터 출처 목록 | GET | `/api/admin/public-data/sources` | seed API 연결 완료 |
+| 공공데이터 | 현장 제보 비교 | GET | `/api/admin/public-data/comparisons` | seed API 연결 완료 |
+| 공공데이터 | 외부 API 설정 상태 | GET | `/api/admin/public-data/provider-status` | 연결 완료 |
+| 공공데이터 | 전체 샘플 동기화 | POST | `/api/admin/public-data/sync/all` | 일부 data.go.kr API 연결 |
+| 반복 분석 | 분석 요약 | GET | `/api/admin/analysis/summary` | 연결 완료 |
+| 반복 분석 | 반복 문제 목록 | GET | `/api/admin/analysis/repeated-issues` | 연결 완료 |
 | 도움 요청 | 도움 요청 목록 | GET | `/api/admin/help-requests` | 34차 연결 완료 |
-| 도움 요청 | 도움 요청 상세 | GET | `/api/admin/help-requests/{requestId}` | 백엔드 추가 필요 |
+| 도움 요청 | 도움 요청 상세 | GET | `/api/admin/help-requests/{requestId}` | 아직 구현 안 됨 · 추가 예정 |
 | 도움 요청 | 상태 변경 | PATCH | `/api/admin/help-requests/{requestId}/status` | 34차 연결 완료 |
-| 도움 요청 | 센터 판단 저장 | PATCH | `/api/admin/help-requests/{requestId}/decision` | 백엔드 추가 필요 |
-| 경험 피드 | 피드 목록 | GET | `/api/admin/stories` | 백엔드 추가 필요 |
-| 경험 피드 | 공개 상태 변경 | PATCH | `/api/admin/stories/{storyId}/visibility` | 백엔드 추가 필요 |
-| 경험 피드 | AI 익명화 요청 | POST | `/api/admin/stories/{storyId}/anonymize` | 백엔드 추가 필요 |
-| 워크플로우 | 개선 과제 목록 | GET | `/api/admin/improvement-tasks` | 백엔드 추가 필요 |
-| 워크플로우 | 개선 단계 변경 | PATCH | `/api/admin/improvement-tasks/{taskId}/stage` | 백엔드 추가 필요 |
-| 월간 리포트 | 월간 리포트 조회 | GET | `/api/admin/monthly-reports/{month}` | 백엔드 추가 필요 |
-| 월간 리포트 | PDF 생성 | POST | `/api/admin/monthly-reports/{month}/exports/pdf` | 백엔드 추가 필요 |
-| 월간 리포트 | CSV 생성 | POST | `/api/admin/monthly-reports/{month}/exports/csv` | 백엔드 추가 필요 |
-| 설정 | 관리자 프로필 | GET | `/api/admin/me` | 백엔드 추가 필요 |
-| 설정 | 감사 로그 | GET | `/api/admin/audit-logs` | 백엔드 추가 필요 |
+| 도움 요청 | 센터 판단 저장 | PATCH | `/api/admin/help-requests/{requestId}/decision` | 연결 완료 |
+| 경험 피드 | 피드 목록 | GET | `/api/admin/stories` | 연결 완료 |
+| 경험 피드 | 공개 상태 변경 | PATCH | `/api/admin/stories/{storyId}/visibility` | 연결 완료 |
+| 경험 피드 | AI 익명화 요청 | POST | `/api/admin/stories/{storyId}/anonymize` | 아직 구현 안 됨 · 추가 예정 |
+| 워크플로우 | 개선 과제 목록 | GET | `/api/admin/improvement-tasks` | 연결 완료 |
+| 워크플로우 | 개선 단계 변경 | PATCH | `/api/admin/improvement-tasks/{taskId}/stage` | 연결 완료 |
+| 월간 리포트 | 월간 리포트 조회 | GET | `/api/admin/monthly-report` | 연결 완료 |
+| 월간 리포트 | PDF 생성 | POST | `/api/admin/monthly-reports/{month}/exports/pdf` | 아직 구현 안 됨 · 추가 예정 |
+| 월간 리포트 | CSV 다운로드 | GET | `/api/admin/monthly-report/export/csv?yearMonth=YYYY-MM` | 연결 완료 |
+| 설정 | 관리자 프로필 | GET | `/api/admin/me` | 연결 완료 |
+| 설정 | 감사 로그 | GET | `/api/admin/audit-logs` | 백엔드 API 있음 · 프론트 화면 연결 추가 예정 |
 
 ## 프론트 타입 연결 방향
 
@@ -92,24 +96,24 @@
 
 ### 중요한 제한
 
-- 아직 실제 `fetch`는 사용하지 않습니다.
-- `.env` 또는 `VITE_API_BASE_URL`은 만들지 않았습니다.
-- 백엔드가 연결된 것처럼 표현하지 않습니다.
-- 현재 필터링은 브라우저 메모리의 Mock 데이터 기준입니다.
-- 실제 서버 검색, 페이지네이션, 정렬은 Spring Boot API 연결 후 구현해야 합니다.
+- 기본 실행은 Mock 모드입니다.
+- HTTP 모드에서는 `src/services/httpClient.ts`를 통해 일부 Spring Boot API를 호출합니다.
+- 실제 `.env`, API Key, Token은 GitHub에 올리지 않습니다.
+- 백엔드가 연결되지 않은 화면은 `아직 구현 안 됨 · 추가 예정`으로 표시합니다.
+- 실제 서버 검색, 페이지네이션, 정렬 고도화는 Spring Boot API 확장 후 구현해야 합니다.
 
 ## 20차 화면/API 매핑 최종 점검
 
 20차에서는 화면별 API 연결 후보를 별도 문서로 분리했습니다.
 
 - 상세 문서: [`docs/api-screen-map.md`](api-screen-map.md)
-- 목적: 화면, 프론트 함수, Spring Boot endpoint 후보, 현재 Mock 상태를 한 표에서 확인
+- 목적: 화면, 프론트 함수, Spring Boot endpoint, 현재 연결/추가 예정 상태를 한 표에서 확인
 - 연결 원칙: 페이지 컴포넌트는 `fetch`를 직접 호출하지 않고 `src/services/api.ts`만 사용
 - 우선 연결 대상: 접근성 제보 목록/상태 변경, 도움 요청 목록/상태 변경
 
-## 21차 백엔드 연결 전 준비
+## 21차 API 전환 준비와 현재 연결 상태
 
-21차 기준으로 실제 API 연결 전 프론트에서 준비된 항목은 다음과 같습니다.
+21차에서는 API 전환 구조를 준비했고, 이후 일부 기능은 실제 Spring Boot API로 연결했습니다.
 
 | 항목 | 상태 |
 |---|---|
@@ -117,10 +121,12 @@
 | 목록 Query 타입 | `ReportQuery`, `HelpRequestQuery`, `StoryQuery`, `ImprovementTaskQuery` 준비 |
 | URL query 재현 | `reports`, `help-requests`, `stories`, `workflow` 적용 |
 | Mock 변경 함수 | 제보/도움요청/경험피드/워크플로우 상태 변경 함수 준비 |
+| HTTP client | `src/services/httpClient.ts`에서 실제 API 호출 |
+| API 연결 완료 | 로그인, 내 정보, 대시보드 KPI, 건물, 제보, 도움 요청, 공공데이터 seed |
 | 로딩/빈 상태 | `PageState` 공통 컴포넌트 적용 |
 | Mock 동기화 표시 | `OperationalStatus` 공통 컴포넌트 적용 |
 
-실제 백엔드 연결 단계에서는 이 구조를 유지하고, `delay()`와 Mock 배열 조작 부분만 HTTP client로 교체하는 것이 좋습니다.
+백엔드 연결 단계에서는 이 구조를 유지하고, 미구현 화면만 차례로 HTTP client로 교체하는 것이 좋습니다.
 
 ## 31차 API 실패 UI 준비
 
@@ -156,15 +162,14 @@ cd /Users/juyoung/Downloads/onda/admin-web
 VITE_API_MODE=http VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --host 127.0.0.1 --port 5174
 ```
 
-### 아직 Mock인 영역
+### 아직 Mock 또는 추가 예정인 영역
 
-- 대시보드 KPI 집계
-- 건물 목록과 미니맵 좌표
-- 담당자 배정, 우선순위 변경, 처리 메모 저장
-- 경험 피드 검수
-- 공공데이터 비교
-- 개선 워크플로우
-- 월간 리포트/PDF/CSV 생성
+- 제보 상세 단건 조회, 첨부파일 업로드
+- 도움 요청 상세 단건 조회, 응답자 배정, 실시간 알림
+- 경험 피드 AI 익명화 실제 API
+- 월간 리포트 PDF 생성, 센터 공유, 개선 요청서/Notion 전송
+- 공공데이터 전체 페이지 배치 수집, 정기 스케줄러, 데이터별 필드 정규화
+- 운영 DB 전환, 권한별 API 인가, 감사 로그 조회/내보내기 UI
 
 ## 다음 API 연결 우선순위
 
@@ -183,6 +188,6 @@ VITE_API_MODE=http VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --hos
 | 9 | `PATCH /api/admin/stories/{storyId}/visibility` | 공개/비공개 검수 저장 |
 | 10 | `GET /api/admin/improvement-tasks` | 개선 워크플로우 연결 |
 | 11 | `PATCH /api/admin/improvement-tasks/{taskId}/stage` | 과제 단계 변경 저장 |
-| 12 | `GET /api/admin/dashboard` | 실제 집계 기반 KPI 연결 |
+| 12 | `GET /api/admin/monthly-report/export/csv` | 월간 리포트 CSV 다운로드 |
 
-PDF/CSV 생성, 공공데이터 배치, 실제 AI 익명화 API는 2차 이후로 미뤄도 됩니다.
+PDF 생성, 파일 업로드, 공공데이터 전체 배치, 실제 AI 익명화 API는 2차 이후로 미뤄도 됩니다.

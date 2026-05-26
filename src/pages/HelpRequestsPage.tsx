@@ -1,7 +1,13 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Topbar } from "../components/Topbar";
-import { ApiError, getHelpRequests, isHttpMode, updateHelpRequestStatus } from "../services/api";
+import {
+  ApiError,
+  getHelpRequests,
+  isHttpMode,
+  updateHelpRequestDecision,
+  updateHelpRequestStatus,
+} from "../services/api";
 import type { HelpRequest, HelpRequestStatus } from "../types";
 import { HelpStatusBadge } from "../components/StatusBadge";
 import { ToastContext } from "../App";
@@ -53,6 +59,7 @@ export const HelpRequestsPage: React.FC = () => {
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [detailOpen, setDetailOpen] = useState(true);
   const [detailPinned, setDetailPinned] = useState(true);
+  const [centerDecisionDraft, setCenterDecisionDraft] = useState("");
   const [confirmAction, setConfirmAction] = useState<{
     title: string;
     description: string;
@@ -116,6 +123,9 @@ export const HelpRequestsPage: React.FC = () => {
     () => items.find((item) => item.id === selectedId) ?? null,
     [items, selectedId]
   );
+  useEffect(() => {
+    setCenterDecisionDraft(selected?.centerDecision ?? "");
+  }, [selected?.id, selected?.centerDecision]);
   const selectedIndex = useMemo(
     () => filtered.findIndex((item) => item.id === selectedId),
     [filtered, selectedId]
@@ -155,6 +165,25 @@ export const HelpRequestsPage: React.FC = () => {
       return;
     }
     void performStatusUpdate(status);
+  };
+
+  const saveCenterDecision = async () => {
+    if (!selected) return;
+    const content = centerDecisionDraft.trim();
+    if (!content) {
+      showToast("센터 판단 내용을 입력해 주세요.", "warning");
+      return;
+    }
+    try {
+      const updated = await updateHelpRequestDecision(selected.id, content);
+      if (updated) {
+        setItems((cur) => cur.map((item) => (item.id === updated.id ? updated : item)));
+        showToast(isHttpMode() ? "센터 판단이 API에 저장되었습니다." : "센터 판단이 Mock 저장되었습니다.");
+      }
+    } catch (error) {
+      const apiError = toApiError(error);
+      showToast(`센터 판단 저장 실패: ${apiError.message}`, "error");
+    }
   };
 
   const updateQueryParam = (key: string, value: string | null) => {
@@ -263,7 +292,7 @@ export const HelpRequestsPage: React.FC = () => {
             placeholder="위치, 도움 유형, 메모, 센터 판단 검색"
           />
           <span className="small-muted">
-            검색 결과 {filtered.length}건 · {isHttpMode() ? "서버 query parameter 적용" : "실제 서버 검색은 백엔드 붙여야 함"}
+            검색 결과 {filtered.length}건 · {isHttpMode() ? "서버 query parameter 적용" : "실제 서버 검색은 아직 구현 안 됨 · 추가 예정"}
           </span>
           <label className="filter select-filter">
             <span>정렬</span>
@@ -363,7 +392,7 @@ export const HelpRequestsPage: React.FC = () => {
               <PageState
                 kind="empty"
                 title="조건에 맞는 도움 요청이 없습니다"
-                description="필터를 초기화하거나 다른 검색어를 입력해 주세요. 실제 서버 검색은 백엔드 붙여야 함."
+                description="필터를 초기화하거나 다른 검색어를 입력해 주세요. 실제 서버 검색은 아직 구현 안 됨 · 추가 예정."
                 actionLabel="필터 초기화"
                 onAction={() => {
                   resetFilters();
@@ -422,7 +451,7 @@ export const HelpRequestsPage: React.FC = () => {
 
                 <div className="row-flex" style={{ justifyContent: "space-between" }}>
                   <HelpStatusBadge status={selected.status} />
-                  <span className="backend-needed">실시간 알림은 백엔드 붙여야 함</span>
+                  <span className="backend-needed">실시간 알림은 아직 구현 안 됨 · 추가 예정</span>
                 </div>
 
                 <div className="public-link-card">
@@ -443,8 +472,19 @@ export const HelpRequestsPage: React.FC = () => {
 
                 <div>
                   <div className="field-l">센터 판단</div>
-                  <div className="field-v quote">
-                    {selected.centerDecision ?? "센터 판단 기준은 백엔드 연결 후 저장됩니다."}
+                  <textarea
+                    className="memo-input"
+                    value={centerDecisionDraft}
+                    onChange={(e) => setCenterDecisionDraft(e.target.value)}
+                    placeholder="센터 직접 확인 내용, 학생 안내 내용, 시설팀 전달 판단을 기록하세요"
+                  />
+                  <div className="row-flex" style={{ justifyContent: "space-between", marginTop: 8 }}>
+                    <span className={isHttpMode() ? "status done" : "backend-needed"}>
+                      {isHttpMode() ? "센터 판단 API 저장" : "센터 판단 저장은 아직 구현 안 됨 · 추가 예정"}
+                    </span>
+                    <button className="h-btn primary" onClick={saveCenterDecision}>
+                      센터 판단 저장
+                    </button>
                   </div>
                 </div>
 
@@ -541,7 +581,7 @@ function helpHistory(item: HelpRequest): ActionTimelineItem[] {
         time: "진행 중",
         actor: "근처 도움 가능 학생",
         action: "응답 대기",
-        note: `${item.responderCount}명에게 알림을 보낸 상태입니다. 실시간 알림은 백엔드 붙여야 함.`,
+        note: `${item.responderCount}명에게 알림을 보낸 상태입니다. 실시간 알림은 아직 구현 안 됨 · 추가 예정.`,
         tone: "warning",
       },
       {
@@ -559,7 +599,7 @@ function helpHistory(item: HelpRequest): ActionTimelineItem[] {
         time: item.avgResponseTime ?? "응답 완료",
         actor: "응답 학생",
         action: "도움 응답 완료",
-        note: "응답자 배정, 이동 완료 확인, 평균 응답 시간 저장은 백엔드 붙여야 함.",
+        note: "응답자 배정, 이동 완료 확인, 평균 응답 시간 저장은 아직 구현 안 됨 · 추가 예정.",
         tone: "success",
       },
     ];
@@ -582,7 +622,7 @@ function helpHistory(item: HelpRequest): ActionTimelineItem[] {
       time: "취소",
       actor: "요청자",
       action: "도움 요청 취소",
-      note: "취소 사유와 안전 확인 저장은 백엔드 붙여야 함.",
+      note: "취소 사유와 안전 확인 저장은 아직 구현 안 됨 · 추가 예정.",
       tone: "warning",
     },
   ];

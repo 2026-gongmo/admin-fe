@@ -22,8 +22,8 @@ export const OperationalStatus: React.FC<Props> = ({
         <span>
           현재 {modeLabel} 기준 · 마지막 동기화 {lastSync} ·{" "}
           {isHttpMode()
-            ? "일부 목록/상태 변경은 실제 API 호출, 나머지는 Mock 유지"
-            : "실제 저장/동기화는 백엔드 붙여야 함"}
+            ? "주요 목록/상태 변경은 실제 API 호출, PDF·파일·실시간 알림은 추가 예정"
+            : "실제 저장/동기화는 아직 구현 안 됨 · 추가 예정"}
         </span>
       </div>
       {onRetry && (

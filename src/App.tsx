@@ -16,7 +16,7 @@ import { NotFoundPage } from "./pages/NotFoundPage";
 import { AccessDeniedPage } from "./pages/AccessDeniedPage";
 import { LoginPage } from "./pages/LoginPage";
 import { getCurrentAdmin, isHttpMode, loginAdmin, logoutAdmin } from "./services/api";
-import { getStoredToken } from "./services/httpClient";
+import { getStoredToken, isDemoAutoLoginEnabled } from "./services/httpClient";
 import type { AdminProfile } from "./types";
 
 export type ToastTone = "info" | "success" | "warning" | "error";
@@ -83,6 +83,14 @@ export default function App() {
     const loadAdmin = async () => {
       try {
         if (isHttpMode() && !getStoredToken()) {
+          if (isDemoAutoLoginEnabled()) {
+            const result = await loginAdmin("center@onda.test", "onda1234!");
+            if (!cancelled) {
+              setAdmin(result.admin);
+              setRolePreview(rolePreviewFromAdmin(result.admin));
+            }
+            return;
+          }
           if (!cancelled) setAdmin(null);
           return;
         }

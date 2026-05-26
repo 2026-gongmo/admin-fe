@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import { Topbar } from "../components/Topbar";
-import { getMonthlyReport } from "../services/api";
+import { downloadMonthlyReportCsv, getMonthlyReport, isHttpMode } from "../services/api";
 import { ToastContext } from "../App";
 
 type Report = Awaited<ReturnType<typeof getMonthlyReport>>;
@@ -68,6 +68,7 @@ const requestPreview = {
 
 export const MonthlyReportPage: React.FC = () => {
   const [report, setReport] = useState<Report | null>(null);
+  const [csvExporting, setCsvExporting] = useState(false);
   const { showToast } = useContext(ToastContext);
 
   useEffect(() => {
@@ -89,13 +90,42 @@ export const MonthlyReportPage: React.FC = () => {
     (report.metrics.resolved / report.metrics.newReports) * 100
   );
 
+  const handleCsvExport = async () => {
+    setCsvExporting(true);
+    try {
+      const result = await downloadMonthlyReportCsv(report.yearMonth);
+      const url = URL.createObjectURL(result.blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = result.filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      showToast(
+        result.apiBacked
+          ? "CSV 파일을 Spring Boot API에서 생성해 다운로드했습니다."
+          : "CSV 파일을 Mock 데이터로 생성해 다운로드했습니다."
+      );
+    } catch (error) {
+      showToast(
+        error instanceof Error
+          ? error.message
+          : "CSV 파일 다운로드에 실패했습니다. 백엔드 서버 상태를 확인해 주세요.",
+        "error"
+      );
+    } finally {
+      setCsvExporting(false);
+    }
+  };
+
   return (
     <>
       <Topbar
         rightExtras={
           <button
             className="h-btn"
-            onClick={() => showToast("리포트 미리보기는 Mock 동작입니다. 실제 저장은 백엔드 붙여야 함.")}
+            onClick={() => showToast("리포트 미리보기는 Mock 동작입니다. 실제 저장은 아직 구현 안 됨 · 추가 예정.")}
           >
             미리보기
           </button>
@@ -112,14 +142,14 @@ export const MonthlyReportPage: React.FC = () => {
           <div className="row-flex">
             <button
               className="h-btn"
-              onClick={() => showToast("개선 요청서 초안 생성은 Mock 동작입니다. 실제 저장은 백엔드 붙여야 함.")}
+              onClick={() => showToast("개선 요청서 초안 생성은 Mock 동작입니다. 실제 저장은 아직 구현 안 됨 · 추가 예정.")}
             >
               개선 요청서 생성
             </button>
             <button
               className="h-btn primary"
               onClick={() =>
-                showToast("PDF 파일 생성은 Mock 동작입니다. 실제 다운로드는 백엔드 붙여야 함.")
+                showToast("PDF 파일 생성은 Mock 동작입니다. 실제 다운로드는 아직 구현 안 됨 · 추가 예정.")
               }
             >
               ⇩ PDF로 내보내기
@@ -270,7 +300,7 @@ export const MonthlyReportPage: React.FC = () => {
                 <b>권장 조치</b>
                 <span>{requestPreview.action}</span>
               </div>
-              <span className="backend-needed mt-10">공문 번호 생성/전송은 백엔드 붙여야 함</span>
+              <span className="backend-needed mt-10">공문 번호 생성/전송은 아직 구현 안 됨 · 추가 예정</span>
             </div>
 
             <hr />
@@ -314,34 +344,33 @@ export const MonthlyReportPage: React.FC = () => {
                 <button
                   className="b primary"
                   onClick={() =>
-                    showToast("PDF 파일 생성은 Mock 동작입니다. 실제 다운로드는 백엔드 붙여야 함.")
+                    showToast("PDF 파일 생성은 Mock 동작입니다. 실제 다운로드는 아직 구현 안 됨 · 추가 예정.")
                   }
                 >
                   PDF로 내보내기 <span>›</span>
                 </button>
                 <button
                   className="b"
-                  onClick={() =>
-                    showToast("CSV 파일 생성은 Mock 동작입니다. 실제 다운로드는 백엔드 붙여야 함.")
-                  }
+                  onClick={handleCsvExport}
+                  disabled={csvExporting}
                 >
-                  CSV로 내보내기 <span>›</span>
+                  {csvExporting ? "CSV 생성 중" : "CSV로 내보내기"} <span>›</span>
                 </button>
                 <button
                   className="b"
-                  onClick={() => showToast("센터 공유는 Mock 동작입니다. 실제 전송은 백엔드 붙여야 함.")}
+                  onClick={() => showToast("센터 공유는 Mock 동작입니다. 실제 전송은 아직 구현 안 됨 · 추가 예정.")}
                 >
                   센터 공유 <span>›</span>
                 </button>
                 <button
                   className="b"
-                  onClick={() => showToast("개선 요청서 초안 생성은 Mock 동작입니다. 실제 저장은 백엔드 붙여야 함.")}
+                  onClick={() => showToast("개선 요청서 초안 생성은 Mock 동작입니다. 실제 저장은 아직 구현 안 됨 · 추가 예정.")}
                 >
                   개선 요청서 생성 <span>›</span>
                 </button>
                 <button
                   className="b"
-                  onClick={() => showToast("Notion 전송은 Mock 동작입니다. 실제 연동은 백엔드 붙여야 함.")}
+                  onClick={() => showToast("Notion 전송은 Mock 동작입니다. 실제 연동은 아직 구현 안 됨 · 추가 예정.")}
                 >
                   노션 페이지로 보내기 <span>›</span>
                 </button>
@@ -372,7 +401,7 @@ export const MonthlyReportPage: React.FC = () => {
                 <b style={{ color: "var(--text)" }}>모바일 앱</b> · 도움 요청 73건<br />
                 <b style={{ color: "var(--text)" }}>관리자</b> · 처리 기록 42건<br />
                 <span className="backend-needed" style={{ marginTop: 8 }}>
-                  실제 PDF/공유는 백엔드 붙여야 함
+                  CSV는 {isHttpMode() ? "Spring Boot API 생성" : "Mock 생성"} · PDF/공유는 아직 구현 안 됨 · 추가 예정
                 </span>
               </div>
             </div>

@@ -222,7 +222,7 @@ export const WorkflowPage: React.FC = () => {
             placeholder="개선 과제, 장소, 담당, 근거, 다음 조치 검색"
           />
           <span className="small-muted">
-            검색 결과 {tasks.length}건 · 실제 서버 검색은 백엔드 붙여야 함
+            검색 결과 {tasks.length}건 · 실제 서버 검색은 아직 구현 안 됨 · 추가 예정
           </span>
           <label className="filter select-filter">
             <span>정렬</span>
@@ -319,7 +319,7 @@ export const WorkflowPage: React.FC = () => {
               <PageState
                 kind="empty"
                 title="조건에 맞는 개선 과제가 없습니다"
-                description="단계 필터를 초기화하거나 검색어를 바꿔 주세요. 실제 서버 검색은 백엔드 붙여야 함."
+                description="단계 필터를 초기화하거나 검색어를 바꿔 주세요. 실제 서버 검색은 아직 구현 안 됨 · 추가 예정."
                 actionLabel="필터 초기화"
                 onAction={() => {
                   resetFilters();
@@ -525,7 +525,7 @@ function workflowHistory(task: ImprovementTask): ActionTimelineItem[] {
         time: "전달",
         actor: task.owner,
         action: "담당 부서 전달",
-        note: "부서 전달 이력, 공문 번호, 회신 기한 저장은 백엔드 붙여야 함.",
+        note: "부서 전달 이력, 공문 번호, 회신 기한 저장은 아직 구현 안 됨 · 추가 예정.",
       },
     ];
   }
@@ -547,7 +547,7 @@ function workflowHistory(task: ImprovementTask): ActionTimelineItem[] {
       time: "완료",
       actor: task.owner,
       action: "해결 처리",
-      note: "현장 확인, 당사자 안내, 재점검 예약 저장은 백엔드 붙여야 함.",
+      note: "현장 확인, 당사자 안내, 재점검 예약 저장은 아직 구현 안 됨 · 추가 예정.",
       tone: "success",
     },
   ];

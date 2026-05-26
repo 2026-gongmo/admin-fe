@@ -53,57 +53,63 @@ const PRIVACY_RULES = [
 const API_MAPPINGS = [
   {
     screen: "대시보드",
-    endpoint: "GET /api/admin/dashboard",
-    purpose: "KPI, 제보 밀도, AI 우선 조치 추천",
-    status: "Mock",
+    endpoint: "GET /api/admin/dashboard/stats · GET /api/admin/buildings",
+    purpose: "KPI, 건물 목록, 제보 밀도 표시",
+    status: "연결 완료",
   },
   {
     screen: "접근성 제보",
-    endpoint: "GET /api/admin/reports · PATCH /api/admin/reports/{id}",
-    purpose: "제보 목록, 상태, 담당자, 우선순위 저장",
-    status: "일부 API 연결",
+    endpoint: "GET /api/admin/reports · PATCH /api/admin/reports/{id} · POST /notes",
+    purpose: "제보 목록, 상태, 담당자, 우선순위, 처리 메모 저장",
+    status: "부분 연결",
   },
   {
     screen: "도움 요청",
-    endpoint: "GET /api/admin/help-requests · PATCH /api/admin/help-requests/{id}",
-    purpose: "도움 요청 조회, 센터 확인, 처리 상태 저장",
-    status: "일부 API 연결",
+    endpoint: "GET /api/admin/help-requests · PATCH /status · PATCH /decision",
+    purpose: "도움 요청 조회, 센터 판단, 처리 상태 저장",
+    status: "부분 연결",
   },
   {
     screen: "경험 피드",
     endpoint: "GET /api/admin/stories · PATCH /api/admin/stories/{id}/visibility",
     purpose: "공개 범위, 익명화 검수, 리포트 반영",
-    status: "백엔드 필요",
+    status: "부분 연결",
   },
   {
     screen: "공공데이터 비교",
-    endpoint: "GET /api/admin/public-data/comparisons",
-    purpose: "공공데이터와 현장 제보 불일치 분석",
-    status: "백엔드 필요",
+    endpoint: "GET /api/admin/public-data/sources · /comparisons · /provider-status",
+    purpose: "seed 데이터 기반 공공데이터와 현장 제보 불일치 분석",
+    status: "부분 연결",
   },
   {
     screen: "월간 리포트",
-    endpoint: "POST /api/admin/monthly-reports · GET /api/admin/monthly-reports/{id}/export",
-    purpose: "리포트 생성, PDF/CSV 내보내기, 공문 번호 발급",
-    status: "백엔드 필요",
+    endpoint: "GET /api/admin/monthly-report · GET /api/admin/monthly-report/export/csv",
+    purpose: "리포트 조회, CSV 다운로드, PDF/공문은 추가 예정",
+    status: "부분 연결",
   },
   {
     screen: "권한/감사 로그",
     endpoint: "GET /api/admin/audit-logs · GET /api/admin/me",
     purpose: "관리자 역할, 접근 로그, 처리 이력 저장",
-    status: "백엔드 필요",
+    status: "부분 연결",
   },
 ];
 
 const BACKEND_CHECKLIST = [
-  "로그인/권한: Spring Security + JWT 또는 세션 인증",
-  "제보 CRUD: 등록, 조회, 상태 변경, 담당자/우선순위 저장",
-  "도움 요청: 실시간 요청 상태 저장과 응답자 로그",
-  "경험 피드: 원문/공개본 분리 저장과 익명화 검수 이력",
-  "리포트: PDF/CSV 생성, 월별 스냅샷 저장, 공문 번호 발급",
-  "감사 로그: 관리자별 조회/수정/내보내기 이력 저장",
-  "공공데이터: 정기 동기화 배치와 실패 재시도",
-  "에러 응답: 권한 없음, 데이터 없음, API 실패 상태 표준화",
+  { item: "관리자 로그인/내 정보 조회", status: "완료" },
+  { item: "제보 목록/상태/담당자/우선순위/처리 메모 API", status: "부분 완료" },
+  { item: "도움 요청 목록/상태/센터 판단 API", status: "부분 완료" },
+  { item: "경험 피드 목록/공개 상태 변경 API", status: "부분 완료" },
+  { item: "개선 워크플로우 목록/단계 변경 API", status: "부분 완료" },
+  { item: "월간 리포트 조회 API", status: "부분 완료" },
+  { item: "공공데이터 seed 조회 + data.go.kr 샘플 동기화 API", status: "부분 완료" },
+  { item: "운영 DB 영속화: 로컬 H2 파일 DB", status: "부분 완료" },
+  { item: "운영 DB 전환: MySQL/PostgreSQL/Oracle DB", status: "아직 구현 안 됨 · 추가 예정" },
+  { item: "경험 피드: 원문/공개본 분리 저장과 익명화 검수 이력", status: "부분 완료" },
+  { item: "리포트: PDF/CSV 생성, 공문 번호 발급", status: "아직 구현 안 됨 · 추가 예정" },
+  { item: "파일 업로드: 제보 사진, 공문, 시설팀 답변서", status: "아직 구현 안 됨 · 추가 예정" },
+  { item: "공공데이터: 전체 데이터셋 정기 배치/필드 정규화", status: "아직 구현 안 됨 · 추가 예정" },
+  { item: "운영 인증: refresh token/session 만료 정책", status: "아직 구현 안 됨 · 추가 예정" },
 ];
 
 const API_TRANSITION_CHECKS = [
@@ -179,6 +185,13 @@ const API_FAILURE_SCOPES: { key: MockApiFailureScope; label: string; desc: strin
   { key: "all", label: "전체 실패", desc: "주요 운영 API 전체 실패 상태 확인" },
 ];
 
+function featureStatusClass(status: string) {
+  if (status === "완료" || status === "연결 완료") return "status done";
+  if (status === "부분 완료" || status === "부분 연결") return "backend-needed";
+  if (status.includes("아직 구현 안 됨")) return "planned-pill";
+  return "mock-pill";
+}
+
 export const SettingsPage: React.FC = () => {
   const { showToast } = useContext(ToastContext);
   const [previewRole, setPreviewRole] = useState(ROLE_POLICIES[0].role);
@@ -216,8 +229,8 @@ export const SettingsPage: React.FC = () => {
           <div>
             <div className="t">
               {isHttpMode()
-                ? "Spring Boot API 연결 모드입니다. 로그인, 제보 목록, 제보 상태 변경, 도움 요청 목록/상태 변경은 실제 API를 호출합니다."
-                : "현재는 Mock 관리자 세션입니다. 실제 로그인, 권한 검증, API 저장, 감사 로그 저장은 백엔드 붙여야 함."}
+                ? "Spring Boot API 연결 모드입니다. 로그인, 제보, 도움 요청, 경험 피드, 개선 과제, 월간 리포트, 공공데이터 조회는 실제 API를 호출합니다."
+                : "현재는 Mock 관리자 세션입니다. 실제 로그인, 권한 검증, API 저장, 감사 로그 저장은 아직 구현 안 됨 · 추가 예정."}
             </div>
             <div className="s">
               API Base URL: {getApiBaseUrl()} · `src/services/api.ts`를 연동 경계로 유지합니다.
@@ -230,7 +243,7 @@ export const SettingsPage: React.FC = () => {
             <div className="panel-h">
               <h3>관리자 로그인 상태</h3>
               <span className={isHttpMode() ? "status done" : "backend-needed"}>
-                {isHttpMode() ? "API 인증 사용" : "인증은 백엔드 붙여야 함"}
+                {isHttpMode() ? "API 인증 사용" : "인증은 아직 구현 안 됨 · 추가 예정"}
               </span>
             </div>
             <div className="settings-list">
@@ -262,7 +275,7 @@ export const SettingsPage: React.FC = () => {
             <div className="row-flex mt-14">
               <button
                 className="h-btn"
-                onClick={() => showToast("역할 전환은 Mock 동작입니다. 실제 권한 저장은 백엔드 붙여야 함.")}
+                onClick={() => showToast("역할 전환은 Mock 동작입니다. 실제 권한 저장은 아직 구현 안 됨 · 추가 예정.")}
               >
                 역할 전환
               </button>
@@ -272,7 +285,7 @@ export const SettingsPage: React.FC = () => {
                   showToast(
                     isHttpMode()
                       ? "상단 로그아웃 버튼을 누르면 로컬 토큰을 제거하고 로그인 화면으로 이동합니다."
-                      : "로그아웃은 Mock 동작입니다. 실제 세션 처리는 백엔드 붙여야 함."
+                      : "로그아웃은 Mock 동작입니다. 실제 세션 처리는 아직 구현 안 됨 · 추가 예정."
                   )
                 }
               >
@@ -285,7 +298,7 @@ export const SettingsPage: React.FC = () => {
             <div className="panel-h">
               <h3>API 연동 상태</h3>
               <span className={isHttpMode() ? "status done" : "backend-needed"}>
-                {isHttpMode() ? "일부 API 연결됨" : "백엔드 붙여야 함"}
+                {isHttpMode() ? "주요 API 연결됨" : "아직 구현 안 됨 · 추가 예정"}
               </span>
             </div>
             <div className="settings-list">
@@ -307,11 +320,11 @@ export const SettingsPage: React.FC = () => {
               </div>
               <div>
                 <span>데이터 저장</span>
-                <b>{isHttpMode() ? "제보/도움 요청 상태 변경 일부 API 저장" : "현재 브라우저 상태 + Mock API"}</b>
+                <b>{isHttpMode() ? "로컬 H2 DB 기준 API 저장" : "현재 브라우저 상태 + Mock API"}</b>
               </div>
               <div>
                 <span>공공데이터 동기화</span>
-                <b>백엔드 배치/API 연동 필요</b>
+                <b>{isHttpMode() ? "data.go.kr 샘플 동기화 가능 · 전체 배치는 추가 예정" : "백엔드 배치/API 연동 필요"}</b>
               </div>
             </div>
             <div className="row-flex mt-14">
@@ -321,7 +334,7 @@ export const SettingsPage: React.FC = () => {
                   showToast(
                     isHttpMode()
                       ? "상단/목록의 다시 불러오기 버튼으로 실제 API를 재호출합니다."
-                      : "API 재시도는 Mock 동작입니다. 실제 호출은 백엔드 붙여야 함."
+                      : "API 재시도는 Mock 동작입니다. 실제 호출은 아직 구현 안 됨 · 추가 예정."
                   )
                 }
               >
@@ -329,7 +342,7 @@ export const SettingsPage: React.FC = () => {
               </button>
               <button
                 className="h-btn"
-                onClick={() => showToast("동기화 로그 조회는 Mock 동작입니다. 실제 로그 저장은 백엔드 붙여야 함.")}
+                onClick={() => showToast("동기화 로그 조회는 Mock 동작입니다. 실제 로그 저장은 아직 구현 안 됨 · 추가 예정.")}
               >
                 동기화 로그
               </button>
@@ -340,7 +353,7 @@ export const SettingsPage: React.FC = () => {
             <div className="panel-h">
               <h3>화면별 API 매핑표</h3>
               <span className={isHttpMode() ? "status done" : "backend-needed"}>
-                {isHttpMode() ? "일부 API 연결됨" : "API 연결은 백엔드 붙여야 함"}
+                {isHttpMode() ? "일부 API 연결됨" : "API 연결은 아직 구현 안 됨 · 추가 예정"}
               </span>
             </div>
             <div className="api-map-list">
@@ -351,15 +364,7 @@ export const SettingsPage: React.FC = () => {
                     <div className="api-purpose">{item.purpose}</div>
                   </div>
                   <code>{item.endpoint}</code>
-                  <span
-                    className={
-                      item.status === "Mock"
-                        ? "mock-pill"
-                        : item.status.includes("연결")
-                          ? "status done"
-                          : "backend-needed"
-                    }
-                  >
+                  <span className={featureStatusClass(item.status)}>
                     {item.status}
                   </span>
                 </div>
@@ -374,9 +379,10 @@ export const SettingsPage: React.FC = () => {
             </div>
             <div className="backend-check-grid">
               {BACKEND_CHECKLIST.map((item) => (
-                <div className="backend-check-item" key={item}>
-                  <span>□</span>
-                  <b>{item}</b>
+                <div className="backend-check-item" key={item.item}>
+                  <span>{item.status === "완료" ? "✓" : item.status === "부분 완료" ? "◐" : "□"}</span>
+                  <b>{item.item}</b>
+                  <em className={featureStatusClass(item.status)}>{item.status}</em>
                 </div>
               ))}
             </div>
@@ -430,8 +436,8 @@ export const SettingsPage: React.FC = () => {
                 <div className="field-l">Mock API 실패 시뮬레이션</div>
                 <b>현재 모드: {API_FAILURE_SCOPES.find((item) => item.key === failureScope)?.label}</b>
                 <p>
-                  실제 fetch는 아직 사용하지 않습니다. 백엔드 연결 후 서버 오류, 권한 오류,
-                  네트워크 실패를 같은 패턴으로 처리하기 위한 프론트 상태 샘플입니다.
+                  HTTP 모드에서는 실제 Spring Boot API 오류를 표시하고, Mock 모드에서는 같은 UI를
+                  실패 시뮬레이션으로 확인합니다.
                 </p>
               </div>
               <div className="seg-control">
@@ -464,7 +470,7 @@ export const SettingsPage: React.FC = () => {
                   className={previewRole === item.role ? "on" : ""}
                   onClick={() => {
                     setPreviewRole(item.role);
-                    showToast(`${item.role} 권한 미리보기입니다. 실제 인가는 백엔드 붙여야 함.`, "warning");
+                  showToast(`${item.role} 권한 미리보기입니다. 실제 인가는 아직 구현 안 됨 · 추가 예정입니다.`, "warning");
                   }}
                 >
                   {item.role}
@@ -504,7 +510,7 @@ export const SettingsPage: React.FC = () => {
           <div className="panel">
             <div className="panel-h">
               <h3>권한 제한 액션 샘플</h3>
-              <span className="backend-needed">실제 인가는 백엔드 붙여야 함</span>
+              <span className="planned-pill">아직 구현 안 됨 · 추가 예정</span>
             </div>
             <div className="locked-action-list">
               {LOCKED_ACTIONS.map((item) => (
@@ -516,7 +522,7 @@ export const SettingsPage: React.FC = () => {
                   <button
                     className="h-btn"
                     disabled
-                    title="실제 권한 검사는 백엔드 붙여야 함"
+                    title="실제 권한 검사는 아직 구현 안 됨 · 추가 예정"
                   >
                     권한 필요
                   </button>
@@ -528,7 +534,7 @@ export const SettingsPage: React.FC = () => {
           <div className="panel">
             <div className="panel-h">
               <h3>개인정보/위치정보 보호 정책</h3>
-              <span className="backend-needed">정책 저장은 백엔드 붙여야 함</span>
+              <span className="planned-pill">아직 구현 안 됨 · 추가 예정</span>
             </div>
             <div className="privacy-grid">
               {PRIVACY_RULES.map((rule) => (
@@ -543,7 +549,7 @@ export const SettingsPage: React.FC = () => {
           <div className="panel">
             <div className="panel-h">
               <h3>관리자 활동 로그</h3>
-              <span className="backend-needed">감사 로그 저장은 백엔드 붙여야 함</span>
+              <span className="backend-needed">백엔드 API 있음 · 화면 연결 추가 예정</span>
             </div>
             <div className="audit-list">
               {ACTIVITY_LOGS.map((log) => (
@@ -566,8 +572,8 @@ export const SettingsPage: React.FC = () => {
                 <span>.env, Token, API Key, node_modules, dist는 업로드 대상에서 제외합니다.</span>
               </div>
               <div>
-                <b>백엔드 연결 예정</b>
-                <span>저장, 공유, PDF 생성, 기관 연동은 백엔드 붙여야 함으로 표시합니다.</span>
+                <b>추가 예정은 추가 예정으로 표시</b>
+                <span>공유, PDF 생성, 파일 업로드, 기관 연동은 아직 구현 안 됨 · 추가 예정으로 표시합니다.</span>
               </div>
             </div>
           </div>

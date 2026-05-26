@@ -8,61 +8,61 @@ const STEPS = [
     title: "대시보드에서 오늘의 핵심 문제 확인",
     route: "/dashboard",
     point: "중앙도서관 5층 승강기가 최우선 개선 과제로 잡히는 이유를 보여줍니다.",
-    status: "Mock 데이터",
+    status: "부분 연결",
   },
   {
     title: "공공데이터와 현장 제보 차이 확인",
     route: "/public-data",
     point: "공공데이터에는 시설이 있어도 실제 이용성 문제가 남는다는 차별점을 설명합니다.",
-    status: "백엔드 붙여야 함",
+    status: "seed API 연결",
   },
   {
     title: "접근성 제보 상세에서 근거 확인",
     route: "/reports",
     point: "제보 원문, 공감 수, AI 추천 조치, 공공데이터 연결 정보를 함께 확인합니다.",
-    status: "Mock 데이터",
+    status: "부분 연결",
   },
   {
     title: "관리자 처리 입력 흐름 확인",
     route: "/reports",
     point: "처리 메모, 상태 변경 사유, 담당 부서, 해결 체크리스트, 첨부파일 Mock을 보여줍니다.",
-    status: "백엔드 붙여야 함",
+    status: "부분 연결",
   },
   {
     title: "경험 피드에서 익명화 검수 확인",
     route: "/stories",
     point: "당사자 경험이 공개되기 전 원문 위험 표현과 공개용 변환안을 비교합니다.",
-    status: "백엔드 붙여야 함",
+    status: "아직 구현 안 됨 · 추가 예정",
   },
   {
     title: "관리자 권한과 개인정보 보호 정책 확인",
     route: "/settings",
     point: "센터, 시설팀, 슈퍼관리자 역할 분리와 감사 로그 필요성을 설명합니다.",
-    status: "Mock 데이터",
+    status: "부분 연결",
   },
   {
     title: "권한 없음 상태 확인",
     route: "/access-denied",
     point: "역할 기반 인가가 붙었을 때 제한 화면이 어떻게 보이는지 설명합니다.",
-    status: "백엔드 붙여야 함",
+    status: "아직 구현 안 됨 · 추가 예정",
   },
   {
     title: "백엔드 연동 준비 상태 확인",
     route: "/settings",
     point: "화면별 API 매핑표, Spring Boot 구현 체크리스트, 로딩/에러/빈 상태 설계를 보여줍니다.",
-    status: "백엔드 붙여야 함",
+    status: "구현 상태표",
   },
   {
     title: "개선 워크플로우로 학교 처리 과정 연결",
     route: "/workflow",
     point: "개인 제보가 센터 검토, 부서 전달, 조치 예정, 해결로 넘어가는 흐름을 보여줍니다.",
-    status: "상태 변경 가능",
+    status: "아직 구현 안 됨 · 추가 예정",
   },
   {
     title: "월간 리포트로 제출 근거 생성",
     route: "/monthly-report",
     point: "건물별 리포트, 고위험 미해결 항목, 개선 요청서 미리보기, PDF/CSV 내보내기 Mock을 보여줍니다.",
-    status: "백엔드 붙여야 함",
+    status: "아직 구현 안 됨 · 추가 예정",
   },
 ];
 
@@ -81,9 +81,9 @@ const SCRIPT_CARDS = [
     time: "00:00 - 05:00",
     lines: [
       "문제 배경은 캠퍼스 접근성, 관계 고립, 제도 사각지대입니다.",
-      "관리자는 제보 상세에서 담당자, 우선순위, 처리 메모, 첨부파일 Mock까지 확인합니다.",
+      "관리자는 제보 상세에서 담당자, 우선순위, 처리 메모를 API로 저장하고, 첨부파일은 추가 예정으로 확인합니다.",
       "경험 피드는 익명화 전/후 비교를 거쳐 공개되고, 공감 데이터는 리포트로 축적됩니다.",
-      "현재는 프론트 Mock이며 인증, 저장, PDF 생성, 공공데이터 동기화는 백엔드 추가 필요입니다.",
+      "현재는 일부 Spring Boot API가 연결되어 있고, PDF 생성과 실제 공공데이터 동기화는 아직 구현 안 됨 · 추가 예정입니다.",
     ],
   },
 ];
@@ -101,8 +101,8 @@ const PRE_DEMO_CHECKS = [
   "대시보드 KPI와 제보 TOP 이슈 표시 확인",
   "제보 상세 패널에서 처리 메모/담당 부서/체크리스트 확인",
   "경험 피드 익명화 전/후 비교 확인",
-  "월간 리포트 PDF/CSV 버튼 Mock Toast 확인",
-  "백엔드 추가 필요 문구가 실제 연동처럼 보이지 않게 표시되는지 확인",
+  "월간 리포트 PDF/CSV 버튼이 아직 구현 안 됨 · 추가 예정으로 표시되는지 확인",
+  "미구현 기능이 실제 연동처럼 보이지 않게 표시되는지 확인",
 ];
 
 const DEMO_ROUTES = [
@@ -138,7 +138,7 @@ const CLICK_FLOW = [
     time: "00:00",
     action: "발표 모드 켜기",
     route: "/demo-guide",
-    say: "프론트는 공모전 시연용 Mock이며, 실제 저장은 백엔드 연결 전입니다.",
+    say: "프론트와 백엔드 일부는 연결했고, 아직 구현 안 된 기능은 추가 예정으로 분리해 표시합니다.",
   },
   {
     time: "00:20",
@@ -186,19 +186,27 @@ const CLICK_FLOW = [
     time: "04:50",
     action: "설정/API 실패 상태",
     route: "/settings",
-    say: "백엔드 연결 전 필요한 API, 권한, 실패 상태까지 준비되어 있습니다.",
+    say: "연결 완료, 부분 연결, 아직 구현 안 됨 항목을 설정 화면에서 투명하게 보여줍니다.",
   },
 ];
 
 const BACKEND_TODOS = [
-  "인증/인가: Spring Security/JWT 또는 세션 로그인",
-  "제보 저장: 상태, 담당자, 우선순위, 처리 메모 DB 저장",
+  "운영 DB 영속화: 현재 H2 seed라 서버 재시작 시 초기화",
   "파일 업로드: 제보 사진, 공문, 시설팀 답변서 업로드",
-  "AI 결과 저장: 익명화 원문/공개본 분리 저장",
+  "경험 피드 API: 원문/공개본 분리 저장과 익명화 검수 이력",
+  "워크플로우 API: 개선 과제 단계, 부서 전달, 회신 기한 저장",
   "리포트 생성: PDF/CSV 파일 생성과 공문 번호 발급",
-  "공공데이터 동기화: data.go.kr/대학알리미 API 배치 연동",
-  "감사 로그: 관리자 조회/수정/내보내기 이력 저장",
+  "공공데이터 동기화: 실제 API 키 기반 data.go.kr/대학알리미 배치 연동",
+  "운영 인증: refresh token/session 만료 정책",
 ];
+
+function demoStatusClass(status: string) {
+  if (status.includes("연결")) return status.includes("부분") || status.includes("seed")
+    ? "backend-needed"
+    : "status done";
+  if (status.includes("아직 구현 안 됨")) return "planned-pill";
+  return "mock-pill";
+}
 
 export const DemoGuidePage: React.FC = () => {
   const navigate = useNavigate();
@@ -233,7 +241,7 @@ export const DemoGuidePage: React.FC = () => {
             </button>
             <button
               className="h-btn"
-              onClick={() => showToast("데모 리셋은 Mock 동작입니다. 실제 상태 초기화는 백엔드 추가 필요.")}
+              onClick={() => showToast("데모 리셋은 Mock 동작입니다. 실제 상태 초기화는 아직 구현 안 됨 · 추가 예정.")}
             >
               데모 리셋
             </button>
@@ -250,7 +258,7 @@ export const DemoGuidePage: React.FC = () => {
               장애학생의 제보가 공공데이터 보완, AI 분석, 학교 개선 요청으로 이어지는 흐름을 보여줍니다.
             </div>
             <div className="s">
-              현재는 프론트 MVP이므로 실제 저장/공유/기관 연동은 백엔드 붙여야 함으로 표시합니다.
+              현재는 프론트 MVP이므로 실제 저장/공유/기관 연동은 아직 구현 안 됨 · 추가 예정으로 표시합니다.
             </div>
           </div>
         </div>
@@ -284,13 +292,7 @@ export const DemoGuidePage: React.FC = () => {
                 <div className="demo-point">{step.point}</div>
               </div>
               <div className="row-flex">
-                <span
-                  className={
-                    step.status === "백엔드 붙여야 함"
-                      ? "backend-needed"
-                      : "mock-pill"
-                  }
-                >
+                <span className={demoStatusClass(step.status)}>
                   {step.status}
                 </span>
                 <button className="h-btn" onClick={() => navigate(step.route)}>
@@ -327,16 +329,16 @@ export const DemoGuidePage: React.FC = () => {
           <div className="panel">
             <div className="panel-h">
               <h3>시연 중 말할 주의점</h3>
-              <span className="backend-needed">정확성 표시</span>
+              <span className="backend-needed">구현 상태 구분</span>
             </div>
             <div className="quality-list">
               <div>
-                <b>현재는 Mock 프론트입니다</b>
-                <span>검색, 상태 변경, 모달, 라우팅은 동작하지만 실제 DB 저장은 아직 아닙니다.</span>
+                <b>연결된 기능과 예정 기능을 구분합니다</b>
+                <span>제보/도움 요청 일부는 API로 저장되고, PDF·파일·경험 피드는 아직 구현 안 됨 · 추가 예정입니다.</span>
               </div>
               <div>
-                <b>Spring Boot 연결 전제입니다</b>
-                <span>`src/services/api.ts` 경계를 유지해 나중에 HTTP client로 교체할 수 있게 만들었습니다.</span>
+                <b>Spring Boot 연결 범위를 설명합니다</b>
+                <span>`src/services/api.ts` 경계를 유지해 붙일 수 있는 API는 연결했고, 남은 기능은 같은 방식으로 확장합니다.</span>
               </div>
               <div>
                 <b>관리자 웹의 목적</b>
@@ -399,7 +401,7 @@ export const DemoGuidePage: React.FC = () => {
 
           <div className="panel backend-todo-panel">
             <div className="panel-h">
-              <h3>백엔드 추가 필요</h3>
+              <h3>아직 구현 안 됨 · 추가 예정</h3>
               <span className="backend-needed">아직 미구현</span>
             </div>
             <div className="backend-todo-list">

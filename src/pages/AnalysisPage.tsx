@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { Topbar } from "../components/Topbar";
-import { getReports } from "../services/api";
-import type { AccessibilityReport } from "../types";
+import { getAnalysisSummary, getReports } from "../services/api";
+import type { AccessibilityReport, AnalysisSummary } from "../types";
 import { UrgencyBadge } from "../components/StatusBadge";
 import { ToastContext } from "../App";
 import { useNavigate } from "react-router-dom";
@@ -17,43 +17,57 @@ const TYPE_TO_KEY: Record<string, string> = {
 
 export const AnalysisPage: React.FC = () => {
   const [reports, setReports] = useState<AccessibilityReport[]>([]);
+  const [summary, setSummary] = useState<AnalysisSummary | null>(null);
   const { showToast } = useContext(ToastContext);
   const navigate = useNavigate();
 
   useEffect(() => {
-    getReports().then(setReports);
+    Promise.all([getReports(), getAnalysisSummary()]).then(([nextReports, nextSummary]) => {
+      setReports(nextReports);
+      setSummary(nextSummary);
+    });
   }, []);
 
-  // 문제 유형별 합계 (mock 보강 값 포함)
-  const baseTypeCounts: Record<string, number> = {
-    엘리베이터: 42,
-    "단차·계단": 31,
-    키오스크: 25,
-    화장실: 18,
-    경사로: 12,
-  };
-  reports.forEach((r) => {
-    const key = TYPE_TO_KEY[r.problemType] ?? null;
-    if (key && baseTypeCounts[key] !== undefined) {
-      // 값을 그대로 유지하되, 데이터를 반영하려면 누적 가능. 여기서는 baseline 유지.
-    }
-  });
+  const typeCounts = summary
+    ? normalizeTypeDistribution(summary.typeDistribution)
+    : [
+        { label: "엘리베이터", count: 42 },
+        { label: "단차·계단", count: 31 },
+        { label: "키오스크", count: 25 },
+        { label: "화장실", count: 18 },
+        { label: "경사로", count: 12 },
+      ];
+  const baseTypeCounts = Object.fromEntries(typeCounts.map((item) => [item.label, item.count]));
   const max = Math.max(...Object.values(baseTypeCounts));
 
-  // 건물별 합계
-  const byBuilding: { name: string; count: number }[] = [
-    { name: "중앙도서관", count: 32 },
-    { name: "학생회관", count: 25 },
-    { name: "공학관", count: 18 },
-    { name: "체육관", count: 14 },
-    { name: "정문 / 외부", count: 11 },
-    { name: "인문관", count: 9 },
-  ];
+  const byBuilding = summary?.buildingDistribution.map((item) => ({
+    name: item.label,
+    count: item.count,
+  })) ?? [
+      { name: "중앙도서관", count: 32 },
+      { name: "학생회관", count: 25 },
+      { name: "공학관", count: 18 },
+      { name: "체육관", count: 14 },
+      { name: "정문 / 외부", count: 11 },
+      { name: "인문관", count: 9 },
+    ];
   const buildingMax = Math.max(...byBuilding.map((b) => b.count));
 
-  const top5 = [...reports]
-    .sort((a, b) => b.reportCount - a.reportCount)
-    .slice(0, 5);
+  const top5 = summary?.repeatedIssues ?? [...reports]
+      .sort((a, b) => b.reportCount - a.reportCount)
+      .slice(0, 5)
+      .map((report) => ({
+        reportId: report.id,
+        buildingName: report.buildingName,
+        problemType: report.problemType,
+        content: report.content,
+        reportCount: report.reportCount,
+        empathyCount: report.empathyCount,
+        urgency: report.urgency,
+        priorityScore: report.reportCount + report.empathyCount,
+        publicDataGap: "공공데이터 비교 전",
+        recommendedAction: report.aiSuggestion ?? "센터 검토 후 시설팀 전달",
+      }));
 
   return (
     <>
@@ -62,7 +76,10 @@ export const AnalysisPage: React.FC = () => {
         <div className="page-h">
           <div>
             <h1>반복 문제 분석</h1>
-            <div className="sub">최근 30일 · 총 제보 128건 · 반복 패턴 24건</div>
+            <div className="sub">
+              최근 30일 · 총 제보 {summary?.totalReports ?? 128}건 · 반복 패턴{" "}
+              {summary?.repeatedPatternCount ?? 24}건
+            </div>
           </div>
           <div className="row-flex">
             <button
@@ -81,10 +98,11 @@ export const AnalysisPage: React.FC = () => {
           <span className="badge">이번 달 핵심</span>
           <div>
             <div className="t">
-              반복 제보가 가장 많은 건물은 <u>중앙도서관</u>입니다.
+              반복 제보가 가장 많은 건물은 <u>{summary?.topBuilding ?? "중앙도서관"}</u>입니다.
             </div>
             <div className="s">
-              엘리베이터·진입 관련 제보가 4주 연속 누적되고 있습니다. 단기 조치 + 중장기 점검이 필요합니다.
+              {summary?.summary ??
+                "엘리베이터·진입 관련 제보가 4주 연속 누적되고 있습니다. 단기 조치 + 중장기 점검이 필요합니다."}
             </div>
           </div>
         </div>
@@ -102,7 +120,7 @@ export const AnalysisPage: React.FC = () => {
             </div>
             <div className="bars">
               {TYPES.map((t) => {
-                const v = baseTypeCounts[t];
+                const v = baseTypeCounts[t] ?? 0;
                 const pct = Math.round((v / max) * 100);
                 return (
                   <div className="bar" key={t}>
@@ -143,22 +161,24 @@ export const AnalysisPage: React.FC = () => {
           <div className="ai-box">
             <div className="head">💡 AI 요약</div>
             <div className="body">
-              중앙도서관과 학생회관에서 <b>이동 접근성</b> 관련 제보가
-              반복되고 있습니다. 단기적으로 안내문과 대체 경로 제공이 필요하며,
-              중장기적으로 시설 점검이 필요합니다.
+              {summary?.summary ?? (
+                <>
+                  중앙도서관과 학생회관에서 <b>이동 접근성</b> 관련 제보가
+                  반복되고 있습니다. 단기적으로 안내문과 대체 경로 제공이 필요하며,
+                  중장기적으로 시설 점검이 필요합니다.
+                </>
+              )}
             </div>
             <div className="muted" style={{ fontSize: 12 }}>
               개선 우선순위 제안
             </div>
-            <div className="pri">
-              <span className="b">1. 도서관 엘베 보조 버튼</span>
-            </div>
-            <div className="pri">
-              <span className="b">2. 식당 키오스크 높이 개선</span>
-            </div>
-            <div className="pri">
-              <span className="b">3. 공학관 강의실 대체 배정</span>
-            </div>
+            {top5.slice(0, 3).map((issue, index) => (
+              <div className="pri" key={issue.reportId}>
+                <span className="b">
+                  {index + 1}. {issue.buildingName} {issue.problemType} 개선
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -180,7 +200,7 @@ export const AnalysisPage: React.FC = () => {
             </thead>
             <tbody>
               {top5.map((r, i) => (
-                <tr key={r.id}>
+                <tr key={r.reportId}>
                   <td>
                     <span className="rank-circle">{i + 1}</span>
                   </td>
@@ -194,7 +214,7 @@ export const AnalysisPage: React.FC = () => {
                   <td>
                     <UrgencyBadge urgency={r.urgency} />
                   </td>
-                  <td className="small-muted">{r.aiSuggestion ?? "—"}</td>
+                  <td className="small-muted">{r.recommendedAction}</td>
                 </tr>
               ))}
             </tbody>
@@ -204,3 +224,15 @@ export const AnalysisPage: React.FC = () => {
     </>
   );
 };
+
+function normalizeTypeDistribution(items: AnalysisSummary["typeDistribution"]) {
+  const grouped = items.reduce<Record<string, number>>((acc, item) => {
+    const label = TYPE_TO_KEY[item.label] ?? item.label;
+    acc[label] = (acc[label] ?? 0) + item.count;
+    return acc;
+  }, {});
+  return TYPES.map((label) => ({
+    label,
+    count: grouped[label] ?? 0,
+  }));
+}

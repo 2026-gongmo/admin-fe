@@ -1,9 +1,13 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import { Topbar } from "../components/Topbar";
 import {
+  getModeLabel,
   getPublicDataComparisons,
+  getPublicDataProviderStatus,
   getPublicDataSources,
+  syncAllPublicDataSources,
 } from "../services/api";
+import { ToastContext } from "../App";
 import type {
   PublicDataComparison,
   PublicDataCoverage,
@@ -26,8 +30,12 @@ const COVERAGE_CLASS: Record<PublicDataCoverage, string> = {
 };
 
 export const PublicDataPage: React.FC = () => {
+  const { showToast } = useContext(ToastContext);
   const [sources, setSources] = useState<PublicDataSource[]>([]);
   const [comparisons, setComparisons] = useState<PublicDataComparison[]>([]);
+  const [providerMessage, setProviderMessage] = useState("");
+  const [syncSummary, setSyncSummary] = useState("");
+  const [syncing, setSyncing] = useState(false);
   const [category, setCategory] = useState<PublicDataSource["category"] | "전체">(
     "전체"
   );
@@ -35,6 +43,7 @@ export const PublicDataPage: React.FC = () => {
   useEffect(() => {
     getPublicDataSources().then(setSources);
     getPublicDataComparisons().then(setComparisons);
+    getPublicDataProviderStatus().then((status) => setProviderMessage(status.message));
   }, []);
 
   const categories = useMemo(
@@ -49,6 +58,39 @@ export const PublicDataPage: React.FC = () => {
 
   const mismatchCount = comparisons.filter((c) => c.coverage !== "matched").length;
 
+  const reloadPublicData = async () => {
+    const [nextSources, nextComparisons, status] = await Promise.all([
+      getPublicDataSources(),
+      getPublicDataComparisons(),
+      getPublicDataProviderStatus(),
+    ]);
+    setSources(nextSources);
+    setComparisons(nextComparisons);
+    setProviderMessage(status.message);
+  };
+
+  const syncPublicData = async () => {
+    setSyncing(true);
+    try {
+      const result = await syncAllPublicDataSources();
+      await reloadPublicData();
+      setSyncSummary(
+        `마지막 동기화: 실제 호출 ${result.attemptedDatasets}개 · 성공 ${result.successDatasets}개 · 설정 필요/실패 ${result.skippedDatasets + (result.attemptedDatasets - result.successDatasets)}개`
+      );
+      showToast(
+        result.successDatasets > 0
+          ? `공공데이터 ${result.successDatasets}/${result.totalDatasets}개 동기화 완료`
+          : `공공데이터 실제 연동은 아직 적용 안 됨: ${result.skippedDatasets}개 데이터셋 설정 필요`,
+        result.successDatasets > 0 ? "success" : "warning"
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "공공데이터 동기화에 실패했습니다.";
+      showToast(message, "error");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <>
       <Topbar />
@@ -60,6 +102,9 @@ export const PublicDataPage: React.FC = () => {
               공공데이터는 초기 지도 레이어로 쓰고, 실제 이용 가능성은 ONDA 제보로 보완합니다.
             </div>
           </div>
+          <button className="h-btn primary" onClick={syncPublicData} disabled={syncing}>
+            {syncing ? "동기화 확인 중..." : "공공데이터 실제 동기화"}
+          </button>
         </div>
 
         <div className="summary-banner">
@@ -78,8 +123,18 @@ export const PublicDataPage: React.FC = () => {
           <div className="panel">
             <div className="panel-h">
               <h3>활용 공공데이터</h3>
-              <span className="more">백엔드 연동 전 샘플 기준</span>
+              <span className="more">{getModeLabel()} 기준</span>
             </div>
+            {providerMessage && (
+              <div className="small-muted" style={{ marginBottom: 12 }}>
+                {providerMessage}
+              </div>
+            )}
+            {syncSummary && (
+              <div className="sync-summary" style={{ marginBottom: 12 }}>
+                {syncSummary}
+              </div>
+            )}
 
             <div className="row-flex" style={{ marginBottom: 12, flexWrap: "wrap" }}>
               {categories.map((c) => (

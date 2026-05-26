@@ -156,7 +156,7 @@ export const StoriesPage: React.FC = () => {
             placeholder="제목, 본문, 건물명, 태그, AI 검수 메모 검색"
           />
           <span className="small-muted">
-            검색 결과 {filteredStories.length}건 · 실제 서버 검색은 백엔드 붙여야 함
+            검색 결과 {filteredStories.length}건 · 실제 서버 검색은 아직 구현 안 됨 · 추가 예정
           </span>
           <button className="h-btn" onClick={resetSearch}>
             필터 초기화
@@ -168,7 +168,7 @@ export const StoriesPage: React.FC = () => {
             <PageState
               kind="loading"
               title="경험 피드를 불러오는 중입니다"
-              description="현재는 Mock API 기준입니다. 원문/공개본 저장과 검수 이력은 백엔드 붙여야 함."
+              description="현재는 Mock API 기준입니다. 원문/공개본 저장과 검수 이력은 아직 구현 안 됨 · 추가 예정."
             />
           )}
           {!isLoading && apiError && (
@@ -243,7 +243,7 @@ export const StoriesPage: React.FC = () => {
                     <b>{s.aiReview?.reportReady ? "가능" : "검수 후 가능"}</b>
                   </div>
                   <div className="ai-review-note">
-                    {s.aiReview?.note ?? "AI 검수 결과 저장은 백엔드 붙여야 함."}
+                    {s.aiReview?.note ?? "AI 검수 결과 저장은 아직 구현 안 됨 · 추가 예정."}
                   </div>
                 </div>
 
@@ -253,7 +253,7 @@ export const StoriesPage: React.FC = () => {
                       <div className="field-l">익명화 전/후 비교</div>
                       <b>공개본 검수 Mock</b>
                     </div>
-                    <span className="backend-needed">원문/공개본 저장은 백엔드 붙여야 함</span>
+                    <span className="backend-needed">원문/공개본 저장은 아직 구현 안 됨 · 추가 예정</span>
                   </div>
                   <div className="privacy-compare">
                     <div>
@@ -281,7 +281,7 @@ export const StoriesPage: React.FC = () => {
                       <div className="field-l">검수/공개 처리 이력</div>
                       <b>AI 익명화와 관리자 검수 로그 Mock</b>
                     </div>
-                    <span className="backend-needed">검수 로그 저장은 백엔드 붙여야 함</span>
+                    <span className="backend-needed">검수 로그 저장은 아직 구현 안 됨 · 추가 예정</span>
                   </div>
                   <ActionTimeline items={storyHistory(s)} compact />
                 </div>
@@ -308,7 +308,7 @@ export const StoriesPage: React.FC = () => {
                   <button
                     className="h-btn primary"
                     onClick={() =>
-                      showToast(`"${s.title}" 리포트 반영 동작입니다. 실제 저장은 백엔드 붙여야 함.`)
+                      showToast(`"${s.title}" 리포트 반영 동작입니다. 실제 저장은 아직 구현 안 됨 · 추가 예정.`)
                     }
                   >
                     개선 리포트에 추가
@@ -316,7 +316,7 @@ export const StoriesPage: React.FC = () => {
                   <button
                     className="h-btn"
                     onClick={() =>
-                      showToast("AI 익명화 재검수 요청 동작입니다. 백엔드 붙여야 함.")
+                      showToast("AI 익명화 재검수 요청 동작입니다. 아직 구현 안 됨 · 추가 예정.")
                     }
                   >
                     익명화 다시 검수
@@ -324,7 +324,7 @@ export const StoriesPage: React.FC = () => {
                   <button
                     className="h-btn"
                     onClick={() =>
-                      showToast("익명화 승인 이력 저장은 백엔드 붙여야 함.")
+                      showToast("익명화 승인 이력 저장은 아직 구현 안 됨 · 추가 예정.")
                     }
                   >
                     익명화 승인
@@ -337,7 +337,7 @@ export const StoriesPage: React.FC = () => {
             <PageState
               kind="empty"
               title="검색 조건에 맞는 경험 피드가 없습니다"
-              description="검색어를 바꾸거나 필터를 초기화해 주세요. 실제 서버 검색은 백엔드 붙여야 함."
+              description="검색어를 바꾸거나 필터를 초기화해 주세요. 실제 서버 검색은 아직 구현 안 됨 · 추가 예정."
               actionLabel="검색 초기화"
               onAction={resetSearch}
             />
@@ -354,7 +354,7 @@ function storyHistory(story: Story): ActionTimelineItem[] {
       time: story.createdAt,
       actor: story.authorNickname,
       action: "경험 글 등록",
-      note: "원문 저장과 공개본 분리 저장은 백엔드 붙여야 함.",
+      note: "원문 저장과 공개본 분리 저장은 아직 구현 안 됨 · 추가 예정.",
     },
     {
       time: "AI 검수",
@@ -365,7 +365,7 @@ function storyHistory(story: Story): ActionTimelineItem[] {
           : story.aiReview?.anonymized === "보류"
           ? "익명화 보류"
           : "익명화 검수 필요",
-      note: story.aiReview?.note ?? "AI 검수 결과 저장은 백엔드 붙여야 함.",
+      note: story.aiReview?.note ?? "AI 검수 결과 저장은 아직 구현 안 됨 · 추가 예정.",
       tone: story.aiReview?.anonymized === "완료" ? "success" : "warning",
     },
   ];
@@ -376,7 +376,7 @@ function storyHistory(story: Story): ActionTimelineItem[] {
         time: "관리자",
         actor: "장애학생지원센터",
         action: "비공개 전환",
-        note: "비공개 사유, 승인자, 처리 시간 저장은 백엔드 붙여야 함.",
+        note: "비공개 사유, 승인자, 처리 시간 저장은 아직 구현 안 됨 · 추가 예정.",
         tone: "danger",
       },
     ];

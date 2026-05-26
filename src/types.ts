@@ -51,6 +51,9 @@ export interface Building {
   };
   // 미니 지도용 좌표 (퍼센트)
   position: { x: number; y: number };
+  // 실제 지도 표시용 좌표
+  lat?: number;
+  lng?: number;
 }
 
 export type ReportStatus = "received" | "checking" | "scheduled" | "resolved";
@@ -128,6 +131,48 @@ export interface AdminStats {
   helpRequests: number;
   avgResponseTime: string;
   unresolved: number;
+}
+
+export interface DistributionItem {
+  label: string;
+  count: number;
+}
+
+export interface RepeatedIssue {
+  reportId: string;
+  buildingName: string;
+  problemType: string;
+  content: string;
+  reportCount: number;
+  empathyCount: number;
+  urgency: Urgency;
+  priorityScore: number;
+  publicDataGap: string;
+  recommendedAction: string;
+}
+
+export interface Recommendation {
+  linkedReportId?: string;
+  title: string;
+  buildingName: string;
+  problemType: string;
+  evidence: string;
+  publicDataGap: string;
+  recommendedAction: string;
+  confidence: number;
+  status: "recommendation-ready" | "insufficient-data" | string;
+}
+
+export interface AnalysisSummary {
+  totalReports: number;
+  repeatedPatternCount: number;
+  topBuilding: string;
+  topProblemType: string;
+  summary: string;
+  typeDistribution: DistributionItem[];
+  buildingDistribution: DistributionItem[];
+  repeatedIssues: RepeatedIssue[];
+  recommendation: Recommendation;
 }
 
 export type PublicDataCoverage = "matched" | "missing" | "outdated" | "field_only";
