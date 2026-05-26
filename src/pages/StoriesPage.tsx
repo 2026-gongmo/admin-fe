@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Topbar } from "../components/Topbar";
-import { ApiError, getStoriesForAdmin, updateStoryVisibility } from "../services/api";
+import { anonymizeStory, ApiError, getStoriesForAdmin, updateStoryVisibility } from "../services/api";
 import type { Story } from "../types";
 import { VisibilityBadge } from "../components/StatusBadge";
 import { ToastContext } from "../App";
@@ -53,6 +53,7 @@ export const StoriesPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [apiError, setApiError] = useState<ApiError | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [anonymizingId, setAnonymizingId] = useState<string | null>(null);
 
   const resetSearch = () => {
     setQuery("");
@@ -110,6 +111,35 @@ export const StoriesPage: React.FC = () => {
     } catch (error) {
       const apiError = toApiError(error);
       showToast(`저장 실패: ${apiError.message}`, "error");
+    }
+  };
+
+  const requestAnonymize = async (story: Story) => {
+    setAnonymizingId(story.id);
+    try {
+      const result = await anonymizeStory(story.id);
+      setStories((current) =>
+        current.map((item) =>
+          item.id === story.id
+            ? {
+                ...item,
+                anonymizedContent: result.anonymizedContent,
+                aiReview: {
+                  anonymized: "완료",
+                  sensitiveInfo: result.sensitiveInfoStatus,
+                  reportReady: result.reportReady,
+                  note: result.reviewNote,
+                },
+              }
+            : item
+        )
+      );
+      showToast("AI 익명화 API 검수를 완료했습니다.");
+    } catch (error) {
+      const apiError = toApiError(error);
+      showToast(`익명화 실패: ${apiError.message}`, "error");
+    } finally {
+      setAnonymizingId(null);
     }
   };
 
@@ -262,7 +292,7 @@ export const StoriesPage: React.FC = () => {
                     </div>
                     <div>
                       <span className="field-l">공개용 변환안</span>
-                      <p>{PRIVACY_REVIEWS[s.id]?.anonymized ?? s.content}</p>
+                      <p>{s.anonymizedContent ?? PRIVACY_REVIEWS[s.id]?.anonymized ?? s.content}</p>
                     </div>
                   </div>
                   <div className="risk-chip-row">
@@ -315,11 +345,10 @@ export const StoriesPage: React.FC = () => {
                   </button>
                   <button
                     className="h-btn"
-                    onClick={() =>
-                      showToast("AI 익명화 재검수 요청 동작입니다. 아직 구현 안 됨 · 추가 예정.")
-                    }
+                    onClick={() => void requestAnonymize(s)}
+                    disabled={anonymizingId === s.id}
                   >
-                    익명화 다시 검수
+                    {anonymizingId === s.id ? "익명화 중" : "익명화 다시 검수"}
                   </button>
                   <button
                     className="h-btn"

@@ -99,7 +99,7 @@ ONDA의 학생 앱이 장애학생의 경험과 제보를 모으는 서비스라
 | `#/help-requests` | 긴급 도움 요청 목록, 상세 패널, 센터 판단, 처리 이력 |
 | `#/stories` | 장애학생 경험 피드 관리, AI 익명화/검수 상태 |
 | `#/workflow` | 개선 과제 처리 단계 관리 |
-| `#/monthly-report` | 월간 접근성 리포트, PDF/CSV 내보내기 Mock |
+| `#/monthly-report` | 월간 접근성 리포트, PDF/CSV 내보내기, 리포트 스냅샷 |
 | `#/demo-guide` | 공모전 발표용 시연 순서, 3분/5분 발표 멘트 |
 | `#/settings` | 구현 상태표, 권한 정책, API 매핑, 아직 구현 안 된 기능 목록 |
 
@@ -179,15 +179,15 @@ VITE_DEMO_ADMIN_PASSWORD=onda1234!
 | 제보 상태 변경 | Mock 또는 `PATCH /api/admin/reports/{id}/status` | 상태 사유/부서 정책 고도화 |
 | 담당자/우선순위 변경 | Mock 또는 `PATCH /api/admin/reports/{id}/assignee`, `/priority` | 담당자 목록/권한 검증 고도화 |
 | 처리 메모/상태 변경 사유 | Mock 또는 `POST /api/admin/reports/{id}/notes` | 첨부파일, 메모 목록 조회 고도화 |
-| 첨부파일 | Mock 파일 카드 | 파일 업로드, 바이러스/확장자 검증 |
+| 첨부파일 | Mock 또는 Spring Boot 파일 업로드/다운로드 API | 바이러스/확장자 검증 고도화 |
 | 도움 요청 | Mock 또는 `GET /api/admin/help-requests` | 위치 기반 요청/응답 API 고도화 |
 | 도움 요청 상태 변경 | Mock 또는 `PATCH /api/admin/help-requests/{id}/status`, `/decision` | 응답자 배정/실시간 알림 고도화 |
 | 경험 피드 | Mock 또는 `GET /api/admin/stories`, 공개 상태 변경 API | 원문/공개본 분리 저장, 신고/검수 API 고도화 |
-| AI 익명화 | Mock 결과 | LLM API 호출, 민감정보 탐지, 검수 저장 |
-| 공공데이터 비교 | seed 기반 백엔드 API 또는 data.go.kr 샘플 동기화 | 전체 페이지 수집, 데이터별 필드 정규화, 정기 배치 |
+| AI 익명화 | 규칙 기반 Spring Boot 익명화 API | 외부 LLM API 호출 전 보안 리뷰 |
+| 공공데이터 비교 | seed API, 샘플/전체 페이지 수집 endpoint, 정규화 요약 API | 원천별 필드 검증과 운영 스케줄 조정 |
 | 개선 워크플로우 | Mock 또는 `GET /api/admin/improvement-tasks`, 단계 변경 API | 공문/부서 회신/기한 관리 고도화 |
-| 월간 리포트 | Mock 또는 `GET /api/admin/monthly-report`, CSV는 `GET /api/admin/monthly-report/export/csv` | PDF 생성, 리포트 스냅샷 저장 |
-| 감사 로그 | Mock 화면 | 관리자 조회/수정/내보내기 이력 저장 |
+| 월간 리포트 | Mock 또는 `GET /api/admin/monthly-report`, PDF/CSV 다운로드 API | 공문 발송과 공유 자동화 |
+| 감사 로그 | Spring Boot 조회/CSV 내보내기 API | 검색/기간 필터 고도화 |
 
 ## 데이터 연동 구조
 
@@ -218,7 +218,7 @@ Spring Boot API -> src/services/httpClient.ts -> src/services/api.ts -> src/page
 | 권한 | UI 미리보기 | Spring Security 인가 + 메뉴/버튼 제한 |
 | 감사 로그 | Mock timeline | DB 저장 감사 로그 |
 
-현재 연결 범위는 로그인, 내 정보, 대시보드 KPI, 건물 목록, 접근성 제보 목록/상태/담당자/우선순위/메모, 도움 요청 목록/상태/센터 판단, 경험 피드 목록/공개 상태, 개선 워크플로우 목록/단계, 월간 리포트 조회, 월간 리포트 CSV 다운로드, 공공데이터 seed 조회와 일부 data.go.kr 샘플 동기화, 반복 문제 분석/AI 우선 조치 추천입니다. 첨부파일 업로드, PDF 생성, 전체 공공데이터 배치 수집은 아직 Mock 또는 `아직 구현 안 됨 · 추가 예정` 상태입니다.
+현재 연결 범위는 로그인, 내 정보, 대시보드 KPI, 건물 목록, 접근성 제보 목록/상태/담당자/우선순위/메모/첨부파일, 도움 요청 목록/상태/센터 판단, 경험 피드 목록/공개 상태/규칙 기반 익명화, 개선 워크플로우 목록/단계, 월간 리포트 조회, 월간 리포트 PDF/CSV 다운로드와 스냅샷, 공공데이터 seed 조회와 샘플/전체 페이지 수집 endpoint, 정규화 요약, 반복 문제 분석/AI 우선 조치 추천, 감사 로그 조회/CSV 내보내기입니다. 외부 LLM API, 운영 DB 실연결, 공문/외부 공유 자동 전송은 승인과 별도 보안 검토가 필요합니다.
 
 ## 배포 주의
 
@@ -236,7 +236,7 @@ Spring Boot API -> src/services/httpClient.ts -> src/services/api.ts -> src/page
 | 저장 | 일부 변경은 API 저장, H2 메모리라 서버 재시작 시 초기화 | 운영 DB 저장, 감사 로그 조회 UI 연결 |
 | AI | 익명화/추천 결과는 Mock | LLM API 연동 전 보안 리뷰 후 실제 연결 |
 | 공공데이터 | 비교 결과는 샘플 | data.go.kr 등 배치 수집과 갱신 시각 저장 |
-| 리포트 | CSV 다운로드 API 연결, PDF/공유 버튼은 Mock Toast | PDF 생성, 리포트 스냅샷 저장, 다운로드 이력 |
+| 리포트 | PDF/CSV 다운로드 API와 스냅샷 저장 연결, 공유 버튼은 Mock Toast | 공문/외부 공유 자동화 |
 | 개인정보 | 실제 데이터 없음 | 장애 관련 민감정보, 위치정보 보관 정책 필요 |
 
 ## 문서

@@ -46,6 +46,11 @@ import type {
   DistributionItem,
   Recommendation,
   RepeatedIssue,
+  ReportAttachment,
+  StoryAnonymizeResult,
+  PublicDataNormalization,
+  AuditLog,
+  MonthlyReportSnapshot,
 } from "../types";
 
 // ============================================================
@@ -186,6 +191,16 @@ interface BackendReportNote {
   createdAt: string;
 }
 
+interface BackendReportAttachment {
+  id: number;
+  reportId: number;
+  originalFilename: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedBy: string;
+  createdAt: string;
+}
+
 interface BackendBuilding {
   id: number;
   name: string;
@@ -259,6 +274,44 @@ interface BackendPublicDataSyncBatchResponse {
   skippedDatasets: number;
   results: BackendPublicDataSyncResponse[];
   syncedAt: string;
+}
+
+interface BackendPublicDataNormalization {
+  sourceCount: number;
+  comparisonCount: number;
+  fields: PublicDataNormalization["fields"];
+  generatedAt: string;
+}
+
+interface BackendAuditLog {
+  id: number;
+  adminName: string;
+  action: string;
+  targetType: string;
+  targetId: number;
+  detail: string;
+  createdAt: string;
+}
+
+interface BackendMonthlyReportSnapshot {
+  id: number;
+  yearMonth: string;
+  exportType: string;
+  newReports: number;
+  totalEmpathy: number;
+  helpRequests: number;
+  resolved: number;
+  createdBy: string;
+  createdAt: string;
+}
+
+interface BackendStoryAnonymizeResult {
+  storyId: number;
+  originalContent: string;
+  anonymizedContent: string;
+  sensitiveInfoStatus: StoryAnonymizeResult["sensitiveInfoStatus"];
+  reportReady: boolean;
+  reviewNote: string;
 }
 
 interface BackendStory {
@@ -560,6 +613,61 @@ export async function createReportNote(
     createdAt: new Date().toISOString(),
   });
 }
+
+export async function getReportAttachments(reportId: string): Promise<ReportAttachment[]> {
+  if (isHttpMode()) {
+    const response = await httpRequest<BackendReportAttachment[]>(
+      `/api/admin/reports/${reportId}/attachments`
+    );
+    return response.map(mapReportAttachment);
+  }
+  return delay([]);
+}
+
+export async function uploadReportAttachment(
+  reportId: string,
+  file: File
+): Promise<ReportAttachment> {
+  if (isHttpMode()) {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await httpRequest<BackendReportAttachment>(
+      `/api/admin/reports/${reportId}/attachments`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+    return mapReportAttachment(response);
+  }
+  return delay({
+    id: String(Date.now()),
+    reportId,
+    originalFilename: file.name,
+    contentType: file.type || "application/octet-stream",
+    sizeBytes: file.size,
+    uploadedBy: MOCK_ADMIN.name,
+    createdAt: new Date().toISOString(),
+  });
+}
+
+export async function downloadReportAttachment(
+  reportId: string,
+  attachmentId: string,
+  filename = "onda-report-attachment"
+): Promise<{ blob: Blob; filename: string; apiBacked: boolean }> {
+  if (isHttpMode()) {
+    const blob = await httpDownload(
+      `/api/admin/reports/${reportId}/attachments/${attachmentId}/download`
+    );
+    return { blob, filename, apiBacked: true };
+  }
+  return delay({
+    blob: new Blob(["Mock attachment"], { type: "text/plain;charset=utf-8" }),
+    filename,
+    apiBacked: false,
+  });
+}
 export async function getHelpRequests(
   query: HelpRequestQuery = {}
 ): Promise<HelpRequest[]> {
@@ -697,6 +805,28 @@ export async function updateStoryVisibility(
   _stories = _stories.map((s) => (s.id === id ? { ...s, visibility } : s));
   return delay(_stories.find((s) => s.id === id));
 }
+
+export async function anonymizeStory(storyId: string): Promise<StoryAnonymizeResult> {
+  if (isHttpMode()) {
+    const response = await httpRequest<BackendStoryAnonymizeResult>(
+      `/api/admin/stories/${storyId}/anonymize`,
+      { method: "POST" }
+    );
+    return mapStoryAnonymizeResult(response);
+  }
+  const story = _stories.find((item) => item.id === storyId);
+  const anonymizedContent = (story?.content ?? "")
+    .replace(/\d{1,2}층/g, "고층/저층 구역")
+    .replace(/01[016789]-?\d{3,4}-?\d{4}/g, "[연락처 비공개]");
+  return delay({
+    storyId,
+    originalContent: story?.content ?? "",
+    anonymizedContent,
+    sensitiveInfoStatus: anonymizedContent === story?.content ? "감지 안 됨" : "확인 필요",
+    reportReady: anonymizedContent === story?.content,
+    reviewNote: "Mock 규칙 기반 익명화 결과입니다.",
+  });
+}
 export async function getMonthlyReport() {
   if (isHttpMode()) {
     return httpRequest<typeof monthlyReport>("/api/admin/monthly-report");
@@ -719,6 +849,32 @@ export async function downloadMonthlyReportCsv(
     filename,
     apiBacked: false,
   });
+}
+
+export async function downloadMonthlyReportPdf(
+  yearMonth = monthlyReport.yearMonth
+): Promise<{ blob: Blob; filename: string; apiBacked: boolean }> {
+  const filename = `onda-monthly-report-${yearMonth}.pdf`;
+  if (isHttpMode()) {
+    const params = toQueryString({ yearMonth });
+    const blob = await httpDownload(`/api/admin/monthly-report/export/pdf${params}`);
+    return { blob, filename, apiBacked: true };
+  }
+  return delay({
+    blob: new Blob(["ONDA monthly report PDF mock"], { type: "application/pdf" }),
+    filename,
+    apiBacked: false,
+  });
+}
+
+export async function getMonthlyReportSnapshots(): Promise<MonthlyReportSnapshot[]> {
+  if (isHttpMode()) {
+    const response = await httpRequest<BackendMonthlyReportSnapshot[]>(
+      "/api/admin/monthly-report/snapshots"
+    );
+    return response.map(mapMonthlyReportSnapshot);
+  }
+  return delay([]);
 }
 
 export async function getPublicDataSources(): Promise<PublicDataSource[]> {
@@ -788,6 +944,55 @@ export async function syncAllPublicDataSources(): Promise<BackendPublicDataSyncB
     skippedDatasets: results.length,
     results,
     syncedAt: new Date().toISOString(),
+  });
+}
+
+export async function syncAllPublicDataPages(): Promise<BackendPublicDataSyncBatchResponse> {
+  if (isHttpMode()) {
+    return httpRequest<BackendPublicDataSyncBatchResponse>("/api/admin/public-data/sync/all/full", {
+      method: "POST",
+    });
+  }
+  return syncAllPublicDataSources();
+}
+
+export async function getPublicDataNormalization(): Promise<PublicDataNormalization> {
+  if (isHttpMode()) {
+    return httpRequest<BackendPublicDataNormalization>("/api/admin/public-data/normalization");
+  }
+  return delay({
+    sourceCount: publicDataSources.length,
+    comparisonCount: publicDataComparisons.length,
+    generatedAt: new Date().toISOString(),
+    fields: [
+      {
+        canonicalName: "buildingName",
+        sourceFieldCandidates: "faclNm, buldNm, locationName",
+        usage: "건물명 매칭",
+        status: "Mock 정규화",
+      },
+    ],
+  });
+}
+
+export async function getAuditLogs(): Promise<AuditLog[]> {
+  if (isHttpMode()) {
+    const response = await httpRequest<BackendAuditLog[]>("/api/admin/audit-logs");
+    return response.map(mapAuditLog);
+  }
+  return delay([]);
+}
+
+export async function downloadAuditLogsCsv(): Promise<{ blob: Blob; filename: string; apiBacked: boolean }> {
+  const filename = "onda-audit-logs.csv";
+  if (isHttpMode()) {
+    const blob = await httpDownload("/api/admin/audit-logs/export/csv");
+    return { blob, filename, apiBacked: true };
+  }
+  return delay({
+    blob: new Blob(["id,admin,action\n"], { type: "text/csv;charset=utf-8" }),
+    filename,
+    apiBacked: false,
   });
 }
 export async function getImprovementTasks(
@@ -869,6 +1074,18 @@ function mapReport(report: BackendReport): AccessibilityReport {
   };
 }
 
+function mapReportAttachment(attachment: BackendReportAttachment): ReportAttachment {
+  return {
+    id: String(attachment.id),
+    reportId: String(attachment.reportId),
+    originalFilename: attachment.originalFilename,
+    contentType: attachment.contentType,
+    sizeBytes: attachment.sizeBytes,
+    uploadedBy: attachment.uploadedBy,
+    createdAt: attachment.createdAt,
+  };
+}
+
 const ASSIGNEE_ID_BY_NAME: Record<string, number | undefined> = {
   "박주연": 1,
   "김도현": 2,
@@ -907,6 +1124,43 @@ function mapStory(story: BackendStory): Story {
     visibility: story.visibility ?? undefined,
     aiReview: story.aiReview ?? undefined,
     createdAt: story.createdAt,
+  };
+}
+
+function mapStoryAnonymizeResult(result: BackendStoryAnonymizeResult): StoryAnonymizeResult {
+  return {
+    storyId: String(result.storyId),
+    originalContent: result.originalContent,
+    anonymizedContent: result.anonymizedContent,
+    sensitiveInfoStatus: result.sensitiveInfoStatus,
+    reportReady: result.reportReady,
+    reviewNote: result.reviewNote,
+  };
+}
+
+function mapAuditLog(log: BackendAuditLog): AuditLog {
+  return {
+    id: String(log.id),
+    adminName: log.adminName,
+    action: log.action,
+    targetType: log.targetType,
+    targetId: String(log.targetId),
+    detail: log.detail,
+    createdAt: log.createdAt,
+  };
+}
+
+function mapMonthlyReportSnapshot(snapshot: BackendMonthlyReportSnapshot): MonthlyReportSnapshot {
+  return {
+    id: String(snapshot.id),
+    yearMonth: snapshot.yearMonth,
+    exportType: snapshot.exportType,
+    newReports: snapshot.newReports,
+    totalEmpathy: snapshot.totalEmpathy,
+    helpRequests: snapshot.helpRequests,
+    resolved: snapshot.resolved,
+    createdBy: snapshot.createdBy,
+    createdAt: snapshot.createdAt,
   };
 }
 

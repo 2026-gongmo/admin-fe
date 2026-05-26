@@ -74,6 +74,16 @@ export interface AccessibilityReport {
   aiSuggestion?: string;
 }
 
+export interface ReportAttachment {
+  id: string;
+  reportId: string;
+  originalFilename: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedBy: string;
+  createdAt: string;
+}
+
 export type EmpathyAction = "first_known" | "empathize" | "must_change" | "can_help";
 
 export interface Story {
@@ -97,7 +107,17 @@ export interface Story {
     reportReady: boolean;
     note: string;
   };
+  anonymizedContent?: string;
   createdAt: string;
+}
+
+export interface StoryAnonymizeResult {
+  storyId: string;
+  originalContent: string;
+  anonymizedContent: string;
+  sensitiveInfoStatus: "감지 안 됨" | "확인 필요" | "감지됨";
+  reportReady: boolean;
+  reviewNote: string;
 }
 
 export type HelpRequestStatus = "requesting" | "responded" | "cancelled" | "center_check";
@@ -197,6 +217,18 @@ export interface PublicDataComparison {
   action: string;
 }
 
+export interface PublicDataNormalization {
+  sourceCount: number;
+  comparisonCount: number;
+  fields: {
+    canonicalName: string;
+    sourceFieldCandidates: string;
+    usage: string;
+    status: string;
+  }[];
+  generatedAt: string;
+}
+
 export type WorkflowStage =
   | "reported"
   | "reviewing"
@@ -214,4 +246,26 @@ export interface ImprovementTask {
   dueDate: string;
   evidence: string;
   nextAction: string;
+}
+
+export interface AuditLog {
+  id: string;
+  adminName: string;
+  action: string;
+  targetType: string;
+  targetId: string;
+  detail: string;
+  createdAt: string;
+}
+
+export interface MonthlyReportSnapshot {
+  id: string;
+  yearMonth: string;
+  exportType: "PDF" | "CSV" | string;
+  newReports: number;
+  totalEmpathy: number;
+  helpRequests: number;
+  resolved: number;
+  createdBy: string;
+  createdAt: string;
 }

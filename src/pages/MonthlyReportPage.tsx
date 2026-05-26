@@ -1,6 +1,12 @@
 import React, { useContext, useEffect, useState } from "react";
 import { Topbar } from "../components/Topbar";
-import { downloadMonthlyReportCsv, getMonthlyReport, isHttpMode } from "../services/api";
+import {
+  downloadMonthlyReportCsv,
+  downloadMonthlyReportPdf,
+  getMonthlyReport,
+  getMonthlyReportSnapshots,
+  isHttpMode,
+} from "../services/api";
 import { ToastContext } from "../App";
 
 type Report = Awaited<ReturnType<typeof getMonthlyReport>>;
@@ -69,6 +75,8 @@ const requestPreview = {
 export const MonthlyReportPage: React.FC = () => {
   const [report, setReport] = useState<Report | null>(null);
   const [csvExporting, setCsvExporting] = useState(false);
+  const [pdfExporting, setPdfExporting] = useState(false);
+  const [snapshotSummary, setSnapshotSummary] = useState("");
   const { showToast } = useContext(ToastContext);
 
   useEffect(() => {
@@ -94,14 +102,13 @@ export const MonthlyReportPage: React.FC = () => {
     setCsvExporting(true);
     try {
       const result = await downloadMonthlyReportCsv(report.yearMonth);
-      const url = URL.createObjectURL(result.blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = result.filename;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(url);
+      downloadBlob(result.blob, result.filename);
+      const snapshots = await getMonthlyReportSnapshots();
+      setSnapshotSummary(
+        snapshots.length > 0
+          ? `최근 스냅샷 ${snapshots.length}건 · 마지막 ${snapshots[0].exportType} · ${snapshots[0].createdBy}`
+          : ""
+      );
       showToast(
         result.apiBacked
           ? "CSV 파일을 Spring Boot API에서 생성해 다운로드했습니다."
@@ -116,6 +123,34 @@ export const MonthlyReportPage: React.FC = () => {
       );
     } finally {
       setCsvExporting(false);
+    }
+  };
+
+  const handlePdfExport = async () => {
+    setPdfExporting(true);
+    try {
+      const result = await downloadMonthlyReportPdf(report.yearMonth);
+      downloadBlob(result.blob, result.filename);
+      const snapshots = await getMonthlyReportSnapshots();
+      setSnapshotSummary(
+        snapshots.length > 0
+          ? `최근 스냅샷 ${snapshots.length}건 · 마지막 ${snapshots[0].exportType} · ${snapshots[0].createdBy}`
+          : ""
+      );
+      showToast(
+        result.apiBacked
+          ? "PDF 파일을 Spring Boot API에서 생성해 다운로드했습니다."
+          : "PDF 파일을 Mock 데이터로 생성해 다운로드했습니다."
+      );
+    } catch (error) {
+      showToast(
+        error instanceof Error
+          ? error.message
+          : "PDF 파일 다운로드에 실패했습니다. 백엔드 서버 상태를 확인해 주세요.",
+        "error"
+      );
+    } finally {
+      setPdfExporting(false);
     }
   };
 
@@ -148,11 +183,10 @@ export const MonthlyReportPage: React.FC = () => {
             </button>
             <button
               className="h-btn primary"
-              onClick={() =>
-                showToast("PDF 파일 생성은 Mock 동작입니다. 실제 다운로드는 아직 구현 안 됨 · 추가 예정.")
-              }
+              onClick={handlePdfExport}
+              disabled={pdfExporting}
             >
-              ⇩ PDF로 내보내기
+              {pdfExporting ? "PDF 생성 중" : "⇩ PDF로 내보내기"}
             </button>
           </div>
         </div>
@@ -343,11 +377,10 @@ export const MonthlyReportPage: React.FC = () => {
               <div className="aside-act">
                 <button
                   className="b primary"
-                  onClick={() =>
-                    showToast("PDF 파일 생성은 Mock 동작입니다. 실제 다운로드는 아직 구현 안 됨 · 추가 예정.")
-                  }
+                  onClick={handlePdfExport}
+                  disabled={pdfExporting}
                 >
-                  PDF로 내보내기 <span>›</span>
+                  {pdfExporting ? "PDF 생성 중" : "PDF로 내보내기"} <span>›</span>
                 </button>
                 <button
                   className="b"
@@ -401,8 +434,13 @@ export const MonthlyReportPage: React.FC = () => {
                 <b style={{ color: "var(--text)" }}>모바일 앱</b> · 도움 요청 73건<br />
                 <b style={{ color: "var(--text)" }}>관리자</b> · 처리 기록 42건<br />
                 <span className="backend-needed" style={{ marginTop: 8 }}>
-                  CSV는 {isHttpMode() ? "Spring Boot API 생성" : "Mock 생성"} · PDF/공유는 아직 구현 안 됨 · 추가 예정
+                  PDF/CSV는 {isHttpMode() ? "Spring Boot API 생성" : "Mock 생성"} · 공유는 추가 예정
                 </span>
+                {snapshotSummary && (
+                  <div className="sync-summary" style={{ marginTop: 8 }}>
+                    {snapshotSummary}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -411,3 +449,14 @@ export const MonthlyReportPage: React.FC = () => {
     </>
   );
 };
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}

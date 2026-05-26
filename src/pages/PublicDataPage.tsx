@@ -4,7 +4,9 @@ import {
   getModeLabel,
   getPublicDataComparisons,
   getPublicDataProviderStatus,
+  getPublicDataNormalization,
   getPublicDataSources,
+  syncAllPublicDataPages,
   syncAllPublicDataSources,
 } from "../services/api";
 import { ToastContext } from "../App";
@@ -35,6 +37,7 @@ export const PublicDataPage: React.FC = () => {
   const [comparisons, setComparisons] = useState<PublicDataComparison[]>([]);
   const [providerMessage, setProviderMessage] = useState("");
   const [syncSummary, setSyncSummary] = useState("");
+  const [normalizationSummary, setNormalizationSummary] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [category, setCategory] = useState<PublicDataSource["category"] | "전체">(
     "전체"
@@ -44,6 +47,11 @@ export const PublicDataPage: React.FC = () => {
     getPublicDataSources().then(setSources);
     getPublicDataComparisons().then(setComparisons);
     getPublicDataProviderStatus().then((status) => setProviderMessage(status.message));
+    getPublicDataNormalization().then((result) =>
+      setNormalizationSummary(
+        `정규화 필드 ${result.fields.length}개 · 출처 ${result.sourceCount}종 · 비교 ${result.comparisonCount}건`
+      )
+    );
   }, []);
 
   const categories = useMemo(
@@ -91,6 +99,28 @@ export const PublicDataPage: React.FC = () => {
     }
   };
 
+  const syncFullPublicData = async () => {
+    setSyncing(true);
+    try {
+      const result = await syncAllPublicDataPages();
+      await reloadPublicData();
+      setSyncSummary(
+        `전체 수집: 실제 호출 ${result.attemptedDatasets}개 · 성공 ${result.successDatasets}개 · 설정 필요/실패 ${result.skippedDatasets + (result.attemptedDatasets - result.successDatasets)}개`
+      );
+      showToast(
+        result.successDatasets > 0
+          ? `공공데이터 전체 수집 ${result.successDatasets}/${result.totalDatasets}개 완료`
+          : "전체 수집은 실행됐지만 인증키/endpoint 설정이 더 필요합니다.",
+        result.successDatasets > 0 ? "success" : "warning"
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "공공데이터 전체 수집에 실패했습니다.";
+      showToast(message, "error");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <>
       <Topbar />
@@ -102,9 +132,14 @@ export const PublicDataPage: React.FC = () => {
               공공데이터는 초기 지도 레이어로 쓰고, 실제 이용 가능성은 ONDA 제보로 보완합니다.
             </div>
           </div>
-          <button className="h-btn primary" onClick={syncPublicData} disabled={syncing}>
-            {syncing ? "동기화 확인 중..." : "공공데이터 실제 동기화"}
-          </button>
+          <div className="row-flex">
+            <button className="h-btn" onClick={syncPublicData} disabled={syncing}>
+              {syncing ? "동기화 확인 중..." : "샘플 동기화"}
+            </button>
+            <button className="h-btn primary" onClick={syncFullPublicData} disabled={syncing}>
+              전체 페이지 배치 수집
+            </button>
+          </div>
         </div>
 
         <div className="summary-banner">
@@ -133,6 +168,11 @@ export const PublicDataPage: React.FC = () => {
             {syncSummary && (
               <div className="sync-summary" style={{ marginBottom: 12 }}>
                 {syncSummary}
+              </div>
+            )}
+            {normalizationSummary && (
+              <div className="sync-summary" style={{ marginBottom: 12 }}>
+                {normalizationSummary}
               </div>
             )}
 
@@ -187,6 +227,10 @@ export const PublicDataPage: React.FC = () => {
               <div>
                 <b>AI 활용 지점</b>
                 <span>공공데이터와 제보 차이를 분류하고 개선 우선순위를 추천</span>
+              </div>
+              <div>
+                <b>정기 스케줄러</b>
+                <span>백엔드에서 PUBLIC_DATA_SCHEDULER_ENABLED=true일 때 cron 기반 전체 수집 실행</span>
               </div>
               <div>
                 <b>발표 포인트</b>

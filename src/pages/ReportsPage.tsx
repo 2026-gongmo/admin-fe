@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Topbar } from "../components/Topbar";
 import {
@@ -10,6 +10,9 @@ import {
   updateReportUrgency,
   updateReportStatus,
   ApiError,
+  downloadReportAttachment,
+  getReportAttachments,
+  uploadReportAttachment,
 } from "../services/api";
 import type {
   AccessibilityReport,
@@ -17,6 +20,7 @@ import type {
   PublicDataCoverage,
   Urgency,
   ReportStatus,
+  ReportAttachment,
 } from "../types";
 import {
   ReportStatusBadge,
@@ -126,6 +130,9 @@ export const ReportsPage: React.FC = () => {
   const [processMemo, setProcessMemo] = useState("");
   const [processReason, setProcessReason] = useState(PROCESS_REASONS[0]);
   const [department, setDepartment] = useState(DEPARTMENTS[0]);
+  const [attachments, setAttachments] = useState<ReportAttachment[]>([]);
+  const [attachmentUploading, setAttachmentUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [resolutionChecks, setResolutionChecks] = useState<Record<string, boolean>>({
     "현장 확인": true,
     "당사자 안내": false,
@@ -168,6 +175,16 @@ export const ReportsPage: React.FC = () => {
     () => reports.find((r) => r.id === selectedId) ?? null,
     [reports, selectedId]
   );
+
+  useEffect(() => {
+    if (!selected) {
+      setAttachments([]);
+      return;
+    }
+    getReportAttachments(selected.id)
+      .then(setAttachments)
+      .catch(() => setAttachments([]));
+  }, [selected]);
 
   const filtered = useMemo(
     () => {
@@ -263,6 +280,38 @@ export const ReportsPage: React.FC = () => {
     } catch (error) {
       const apiError = toApiError(error);
       showToast(`담당자 저장 실패: ${apiError.message}`, "error");
+    }
+  };
+
+  const onAttachmentSelected = async (file?: File) => {
+    if (!selected || !file) return;
+    setAttachmentUploading(true);
+    try {
+      const uploaded = await uploadReportAttachment(selected.id, file);
+      setAttachments((current) => [uploaded, ...current]);
+      showToast(`첨부파일 "${uploaded.originalFilename}"을 저장했습니다.`);
+    } catch (error) {
+      const apiError = toApiError(error);
+      showToast(`첨부 저장 실패: ${apiError.message}`, "error");
+    } finally {
+      setAttachmentUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const onAttachmentDownload = async (attachment: ReportAttachment) => {
+    if (!selected) return;
+    try {
+      const result = await downloadReportAttachment(
+        selected.id,
+        attachment.id,
+        attachment.originalFilename
+      );
+      downloadBlob(result.blob, result.filename);
+      showToast("첨부파일을 다운로드했습니다.");
+    } catch (error) {
+      const apiError = toApiError(error);
+      showToast(`다운로드 실패: ${apiError.message}`, "error");
     }
   };
 
@@ -777,22 +826,56 @@ export const ReportsPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <div className="field-l">첨부파일 Mock 영역</div>
+                    <div className="field-l">첨부파일</div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      style={{ display: "none" }}
+                      onChange={(event) => void onAttachmentSelected(event.target.files?.[0])}
+                    />
+                    <div className="row-flex" style={{ marginBottom: 8 }}>
+                      <button
+                        className="h-btn"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={attachmentUploading}
+                      >
+                        {attachmentUploading ? "업로드 중" : "파일 업로드"}
+                      </button>
+                      <span className="small-muted">
+                        {isHttpMode() ? "Spring Boot 파일 저장소에 저장" : "Mock 첨부 저장"}
+                      </span>
+                    </div>
                     <div className="attach-grid">
-                      {ATTACHMENTS.map((item) => (
+                      {(attachments.length > 0 ? attachments.map((item) => ({
+                        name: item.uploadedBy,
+                        file: item.originalFilename,
+                        status: `${Math.ceil(item.sizeBytes / 1024)}KB`,
+                        id: item.id,
+                      })) : ATTACHMENTS).map((item) => (
                         <div className="attach-card" key={item.name}>
                           <b>{item.name}</b>
                           <span>{item.file}</span>
                           <em>{item.status}</em>
+                          {"id" in item && (
+                            <button
+                              className="h-btn"
+                              onClick={() => {
+                                const attachment = attachments.find((target) => target.id === item.id);
+                                if (attachment) void onAttachmentDownload(attachment);
+                              }}
+                            >
+                              다운로드
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
                   </div>
 
                   <div className="row-flex" style={{ justifyContent: "space-between" }}>
-                    <span className={isHttpMode() ? "status done" : "backend-needed"}>
-                      {isHttpMode() ? "처리 메모 API 저장 · 첨부는 아직 구현 안 됨 · 추가 예정" : "처리 메모/첨부 저장은 아직 구현 안 됨 · 추가 예정"}
-                    </span>
+	                    <span className={isHttpMode() ? "status done" : "backend-needed"}>
+	                      {isHttpMode() ? "처리 메모/첨부 API 저장" : "처리 메모/첨부 Mock 저장"}
+	                    </span>
                     <button className="h-btn primary" onClick={saveProcessMemo}>
                       처리 내용 저장
                     </button>
@@ -978,4 +1061,15 @@ function reportHistory(report: AccessibilityReport): ActionTimelineItem[] {
 function toApiError(error: unknown): ApiError {
   if (error instanceof ApiError) return error;
   return new ApiError("UNKNOWN_ERROR", "알 수 없는 API 오류가 발생했습니다.");
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
 }

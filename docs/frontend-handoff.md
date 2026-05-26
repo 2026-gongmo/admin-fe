@@ -90,18 +90,18 @@ VITE_API_MODE=http VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --hos
 | 도움 요청 센터 판단 | `PATCH /api/admin/help-requests/{id}/decision` | 연결 |
 | 경험 피드 목록/공개 상태 | `GET /api/admin/stories`, `PATCH /api/admin/stories/{id}/visibility` | 연결 |
 | 개선 워크플로우 목록/단계 | `GET /api/admin/improvement-tasks`, `PATCH /api/admin/improvement-tasks/{id}/stage` | 연결 |
-| 월간 리포트 조회/CSV | `GET /api/admin/monthly-report`, `GET /api/admin/monthly-report/export/csv` | 연결 |
+| 월간 리포트 조회/PDF/CSV | `GET /api/admin/monthly-report`, `/export/pdf`, `/export/csv` | 연결 |
 | 반복 분석/추천 | `GET /api/admin/analysis/*`, `GET /api/admin/recommendations` | 연결 |
-| 공공데이터 seed 조회 | `GET /api/admin/public-data/*` | 연결 |
+| 공공데이터 seed/전체 수집/정규화 | `GET /api/admin/public-data/*`, `POST /sync/all/full` | 연결 |
+| 제보 첨부파일 | `POST /api/admin/reports/{id}/attachments`, `GET /download` | 연결 |
+| 감사 로그 조회/CSV | `GET /api/admin/audit-logs`, `/export/csv` | 연결 |
 
 ## 아직 Mock이거나 추가 예정인 영역
 
-- 경험 피드 AI 익명화 실제 API
+- 외부 LLM 기반 AI 익명화
 - 제보/도움 요청 상세 단건 조회와 고급 수정
-- 월간 리포트 PDF 생성, 공유/공문/Notion 전송
-- 파일 업로드/다운로드
+- 공유/공문/Notion 전송
 - 중복 제보 병합 저장
-- 전체 data.go.kr 외부 API 배치 동기화
 - 운영 DB 영속화와 production 인증 정책
 
 ## 다음 작업 추천

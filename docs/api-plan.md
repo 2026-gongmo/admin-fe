@@ -26,7 +26,7 @@
 | 접근성 제보 | 담당자 배정 | PATCH | `/api/admin/reports/{reportId}/assignee` | 연결 완료 |
 | 접근성 제보 | 우선순위 변경 | PATCH | `/api/admin/reports/{reportId}/priority` | 연결 완료 |
 | 접근성 제보 | 처리 메모 저장 | POST | `/api/admin/reports/{reportId}/notes` | 연결 완료 |
-| 접근성 제보 | 첨부파일 업로드 | POST | `/api/admin/reports/{reportId}/attachments` | 아직 구현 안 됨 · 추가 예정 |
+| 접근성 제보 | 첨부파일 업로드/다운로드 | POST/GET | `/api/admin/reports/{reportId}/attachments` | 연결 완료 |
 | 공공데이터 | 데이터 출처 목록 | GET | `/api/admin/public-data/sources` | seed API 연결 완료 |
 | 공공데이터 | 현장 제보 비교 | GET | `/api/admin/public-data/comparisons` | seed API 연결 완료 |
 | 공공데이터 | 외부 API 설정 상태 | GET | `/api/admin/public-data/provider-status` | 연결 완료 |
@@ -39,14 +39,14 @@
 | 도움 요청 | 센터 판단 저장 | PATCH | `/api/admin/help-requests/{requestId}/decision` | 연결 완료 |
 | 경험 피드 | 피드 목록 | GET | `/api/admin/stories` | 연결 완료 |
 | 경험 피드 | 공개 상태 변경 | PATCH | `/api/admin/stories/{storyId}/visibility` | 연결 완료 |
-| 경험 피드 | AI 익명화 요청 | POST | `/api/admin/stories/{storyId}/anonymize` | 아직 구현 안 됨 · 추가 예정 |
+| 경험 피드 | AI 익명화 요청 | POST | `/api/admin/stories/{storyId}/anonymize` | 규칙 기반 API 연결 |
 | 워크플로우 | 개선 과제 목록 | GET | `/api/admin/improvement-tasks` | 연결 완료 |
 | 워크플로우 | 개선 단계 변경 | PATCH | `/api/admin/improvement-tasks/{taskId}/stage` | 연결 완료 |
 | 월간 리포트 | 월간 리포트 조회 | GET | `/api/admin/monthly-report` | 연결 완료 |
-| 월간 리포트 | PDF 생성 | POST | `/api/admin/monthly-reports/{month}/exports/pdf` | 아직 구현 안 됨 · 추가 예정 |
+| 월간 리포트 | PDF 생성 | GET | `/api/admin/monthly-report/export/pdf?yearMonth=YYYY-MM` | 연결 완료 |
 | 월간 리포트 | CSV 다운로드 | GET | `/api/admin/monthly-report/export/csv?yearMonth=YYYY-MM` | 연결 완료 |
 | 설정 | 관리자 프로필 | GET | `/api/admin/me` | 연결 완료 |
-| 설정 | 감사 로그 | GET | `/api/admin/audit-logs` | 백엔드 API 있음 · 프론트 화면 연결 추가 예정 |
+| 설정 | 감사 로그 | GET | `/api/admin/audit-logs`, `/export/csv` | 연결 완료 |
 
 ## 프론트 타입 연결 방향
 
@@ -164,12 +164,12 @@ VITE_API_MODE=http VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --hos
 
 ### 아직 Mock 또는 추가 예정인 영역
 
-- 제보 상세 단건 조회, 첨부파일 업로드
+- 제보 상세 단건 조회, 파일 검증 고도화
 - 도움 요청 상세 단건 조회, 응답자 배정, 실시간 알림
-- 경험 피드 AI 익명화 실제 API
-- 월간 리포트 PDF 생성, 센터 공유, 개선 요청서/Notion 전송
-- 공공데이터 전체 페이지 배치 수집, 정기 스케줄러, 데이터별 필드 정규화
-- 운영 DB 전환, 권한별 API 인가, 감사 로그 조회/내보내기 UI
+- 외부 LLM 기반 AI 익명화
+- 센터 공유, 개선 요청서/Notion 전송
+- 운영 DB 실연결과 migration
+- 권한 정책 세분화와 관리자 UI 고도화
 
 ## 다음 API 연결 우선순위
 

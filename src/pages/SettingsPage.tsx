@@ -1,9 +1,11 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Topbar } from "../components/Topbar";
 import { ToastContext } from "../App";
 import {
   getModeLabel,
   getMockApiFailureScope,
+  getAuditLogs,
+  downloadAuditLogsCsv,
   isHttpMode,
   setMockApiFailureScope,
   type MockApiFailureScope,
@@ -83,8 +85,8 @@ const API_MAPPINGS = [
   },
   {
     screen: "월간 리포트",
-    endpoint: "GET /api/admin/monthly-report · GET /api/admin/monthly-report/export/csv",
-    purpose: "리포트 조회, CSV 다운로드, PDF/공문은 추가 예정",
+    endpoint: "GET /api/admin/monthly-report · GET /api/admin/monthly-report/export/csv|pdf",
+    purpose: "리포트 조회, CSV/PDF 다운로드, 스냅샷 이력 저장",
     status: "부분 연결",
   },
   {
@@ -104,11 +106,11 @@ const BACKEND_CHECKLIST = [
   { item: "월간 리포트 조회 API", status: "부분 완료" },
   { item: "공공데이터 seed 조회 + data.go.kr 샘플 동기화 API", status: "부분 완료" },
   { item: "운영 DB 영속화: 로컬 H2 파일 DB", status: "부분 완료" },
-  { item: "운영 DB 전환: MySQL/PostgreSQL/Oracle DB", status: "아직 구현 안 됨 · 추가 예정" },
+  { item: "운영 DB 전환: DB_URL/DB_DRIVER/JPA_DDL_AUTO 환경변수 전환", status: "부분 완료" },
   { item: "경험 피드: 원문/공개본 분리 저장과 익명화 검수 이력", status: "부분 완료" },
-  { item: "리포트: PDF/CSV 생성, 공문 번호 발급", status: "아직 구현 안 됨 · 추가 예정" },
-  { item: "파일 업로드: 제보 사진, 공문, 시설팀 답변서", status: "아직 구현 안 됨 · 추가 예정" },
-  { item: "공공데이터: 전체 데이터셋 정기 배치/필드 정규화", status: "아직 구현 안 됨 · 추가 예정" },
+  { item: "리포트: PDF/CSV 생성, 스냅샷 저장", status: "부분 완료" },
+  { item: "파일 업로드: 제보 사진, 공문, 시설팀 답변서", status: "부분 완료" },
+  { item: "공공데이터: 전체 데이터셋 정기 배치/필드 정규화", status: "부분 완료" },
   { item: "운영 인증: refresh token/session 만료 정책", status: "아직 구현 안 됨 · 추가 예정" },
 ];
 
@@ -198,6 +200,7 @@ export const SettingsPage: React.FC = () => {
   const [failureScope, setFailureScope] = useState<MockApiFailureScope>(
     getMockApiFailureScope()
   );
+  const [auditLogs, setAuditLogs] = useState<string[]>(ACTIVITY_LOGS);
   const currentPolicy = ROLE_POLICIES.find((item) => item.role === previewRole) ?? ROLE_POLICIES[0];
 
   const changeFailureScope = (scope: MockApiFailureScope) => {
@@ -209,6 +212,30 @@ export const SettingsPage: React.FC = () => {
         : "Mock API 실패 시뮬레이션을 켰습니다. 대상 화면에서 재시도/에러 UI를 확인하세요.",
       scope === "off" ? "success" : "warning"
     );
+  };
+
+  useEffect(() => {
+    getAuditLogs()
+      .then((logs) => {
+        if (logs.length > 0) {
+          setAuditLogs(
+            logs.slice(0, 6).map((log) =>
+              `${log.createdAt.slice(11, 16)} ${log.adminName} · ${log.action} · ${log.detail ?? ""}`
+            )
+          );
+        }
+      })
+      .catch(() => setAuditLogs(ACTIVITY_LOGS));
+  }, []);
+
+  const exportAuditLogs = async () => {
+    try {
+      const result = await downloadAuditLogsCsv();
+      downloadBlob(result.blob, result.filename);
+      showToast("감사 로그 CSV를 다운로드했습니다.");
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "감사 로그 다운로드에 실패했습니다.", "error");
+    }
   };
 
   return (
@@ -549,10 +576,13 @@ export const SettingsPage: React.FC = () => {
           <div className="panel">
             <div className="panel-h">
               <h3>관리자 활동 로그</h3>
-              <span className="backend-needed">백엔드 API 있음 · 화면 연결 추가 예정</span>
+              <span className="status done">조회/CSV 내보내기 연결</span>
             </div>
+            <button className="h-btn" onClick={exportAuditLogs} style={{ marginBottom: 12 }}>
+              감사 로그 CSV 내보내기
+            </button>
             <div className="audit-list">
-              {ACTIVITY_LOGS.map((log) => (
+              {auditLogs.map((log) => (
                 <div className="audit-item" key={log}>{log}</div>
               ))}
             </div>
@@ -573,7 +603,7 @@ export const SettingsPage: React.FC = () => {
               </div>
               <div>
                 <b>추가 예정은 추가 예정으로 표시</b>
-                <span>공유, PDF 생성, 파일 업로드, 기관 연동은 아직 구현 안 됨 · 추가 예정으로 표시합니다.</span>
+                <span>외부 전송, 유료 AI API, 운영 DB 실연결은 승인 전까지 추가 예정으로 표시합니다.</span>
               </div>
             </div>
           </div>
@@ -582,3 +612,14 @@ export const SettingsPage: React.FC = () => {
     </>
   );
 };
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}

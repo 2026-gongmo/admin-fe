@@ -121,7 +121,7 @@ export const DashboardPage: React.FC = () => {
             title="대시보드 샘플 데이터를 불러오는 중입니다"
             description={
               isHttpMode()
-                ? "Spring Boot API 기준입니다. 실시간 알림/업무 배정 저장은 아직 구현 안 됨 · 추가 예정."
+                ? "Spring Boot API 기준입니다. 실시간 알림과 일부 업무 배정 자동화는 아직 구현 안 됨 · 추가 예정."
                 : "현재는 Mock service layer 기준입니다. 실제 API 실패/재시도 처리는 아직 구현 안 됨 · 추가 예정."
             }
           />
