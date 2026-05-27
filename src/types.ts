@@ -51,6 +51,9 @@ export interface Building {
   };
   // 미니 지도용 좌표 (퍼센트)
   position: { x: number; y: number };
+  // 실제 지도 표시용 좌표
+  lat?: number;
+  lng?: number;
 }
 
 export type ReportStatus = "received" | "checking" | "scheduled" | "resolved";
@@ -69,6 +72,16 @@ export interface AccessibilityReport {
   createdAt: string;
   assignee?: string;
   aiSuggestion?: string;
+}
+
+export interface ReportAttachment {
+  id: string;
+  reportId: string;
+  originalFilename: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedBy: string;
+  createdAt: string;
 }
 
 export type EmpathyAction = "first_known" | "empathize" | "must_change" | "can_help";
@@ -94,7 +107,17 @@ export interface Story {
     reportReady: boolean;
     note: string;
   };
+  anonymizedContent?: string;
   createdAt: string;
+}
+
+export interface StoryAnonymizeResult {
+  storyId: string;
+  originalContent: string;
+  anonymizedContent: string;
+  sensitiveInfoStatus: "감지 안 됨" | "확인 필요" | "감지됨";
+  reportReady: boolean;
+  reviewNote: string;
 }
 
 export type HelpRequestStatus = "requesting" | "responded" | "cancelled" | "center_check";
@@ -130,10 +153,53 @@ export interface AdminStats {
   unresolved: number;
 }
 
+export interface DistributionItem {
+  label: string;
+  count: number;
+}
+
+export interface RepeatedIssue {
+  reportId: string;
+  buildingName: string;
+  problemType: string;
+  content: string;
+  reportCount: number;
+  empathyCount: number;
+  urgency: Urgency;
+  priorityScore: number;
+  publicDataGap: string;
+  recommendedAction: string;
+}
+
+export interface Recommendation {
+  linkedReportId?: string;
+  title: string;
+  buildingName: string;
+  problemType: string;
+  evidence: string;
+  publicDataGap: string;
+  recommendedAction: string;
+  confidence: number;
+  status: "recommendation-ready" | "insufficient-data" | string;
+}
+
+export interface AnalysisSummary {
+  totalReports: number;
+  repeatedPatternCount: number;
+  topBuilding: string;
+  topProblemType: string;
+  summary: string;
+  typeDistribution: DistributionItem[];
+  buildingDistribution: DistributionItem[];
+  repeatedIssues: RepeatedIssue[];
+  recommendation: Recommendation;
+}
+
 export type PublicDataCoverage = "matched" | "missing" | "outdated" | "field_only";
 
 export interface PublicDataSource {
   id: string;
+  datasetKey?: string;
   name: string;
   provider: string;
   category: "대학" | "시설" | "건축물" | "교통" | "복지";
@@ -150,6 +216,57 @@ export interface PublicDataComparison {
   coverage: PublicDataCoverage;
   risk: Urgency;
   action: string;
+}
+
+export interface PublicDataNormalization {
+  sourceCount: number;
+  comparisonCount: number;
+  fields: {
+    canonicalName: string;
+    sourceFieldCandidates: string;
+    usage: string;
+    status: string;
+  }[];
+  generatedAt: string;
+}
+
+export interface PublicDataRawRecord {
+  id: string;
+  datasetKey: string;
+  datasetName: string;
+  pageNo: number;
+  recordIndex: number;
+  rawPayload: string;
+  sampleSummary: string;
+  createdAt: string;
+}
+
+export interface PublicDataDatasetStatus {
+  datasetKey: string;
+  datasetName: string;
+  envName: string;
+  endpointConfigured: boolean;
+  status: "configured" | "missing-endpoint" | string;
+  note: string;
+}
+
+export interface PublicDataNormalizedRecord {
+  rawRecordId: string;
+  datasetKey: string;
+  datasetName: string;
+  pageNo: number;
+  recordIndex: number;
+  buildingName?: string;
+  address?: string;
+  latitude?: string;
+  longitude?: string;
+  accessibilityFeature?: string;
+  safetyFacility?: string;
+  contact?: string;
+  operatingHours?: string;
+  lastUpdatedAt?: string;
+  matchedFields: Record<string, string>;
+  createdAt: string;
 }
 
 export type WorkflowStage =
@@ -169,4 +286,26 @@ export interface ImprovementTask {
   dueDate: string;
   evidence: string;
   nextAction: string;
+}
+
+export interface AuditLog {
+  id: string;
+  adminName: string;
+  action: string;
+  targetType: string;
+  targetId: string;
+  detail: string;
+  createdAt: string;
+}
+
+export interface MonthlyReportSnapshot {
+  id: string;
+  yearMonth: string;
+  exportType: "PDF" | "CSV" | string;
+  newReports: number;
+  totalEmpathy: number;
+  helpRequests: number;
+  resolved: number;
+  createdBy: string;
+  createdAt: string;
 }

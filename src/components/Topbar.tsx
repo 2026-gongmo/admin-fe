@@ -65,7 +65,7 @@ export const Topbar: React.FC<Props> = ({
 
   const changeRole = (role: AdminRolePreview) => {
     setRolePreview(role);
-    showToast(`${roleLabel(role)} 권한 미리보기입니다. 실제 인가는 백엔드 붙여야 함.`, "warning");
+    showToast(`${roleLabel(role)} 권한 미리보기입니다. 실제 인가는 아직 구현 안 됨 · 추가 예정.`, "warning");
   };
 
   const onLogout = async () => {

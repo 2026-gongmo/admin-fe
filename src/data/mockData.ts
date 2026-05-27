@@ -16,8 +16,9 @@ import type {
   PublicDataComparison,
   ImprovementTask,
 } from "../types";
+import { CAMPUS_PROFILE, getCampusCoordinate } from "../config/campus";
 
-export const SCHOOL_NAME = "ONDA 대학교";
+export const SCHOOL_NAME = CAMPUS_PROFILE.name;
 
 export const currentUser: User = {
   id: "u_jiyoung",
@@ -40,6 +41,7 @@ export const buildings: Building[] = [
     recentReport: "5층 엘리베이터 버튼이 높아 사용이 어렵다",
     features: { elevator: true, ramp: true, accessibleRestroom: true, autoDoor: false },
     position: { x: 38, y: 36 },
+    ...getCampusCoordinate(-0.00133, 0.00078),
   },
   {
     id: "b_student_center",
@@ -51,6 +53,7 @@ export const buildings: Building[] = [
     recentReport: "식당 키오스크 주문 화면이 너무 높습니다",
     features: { elevator: true, ramp: true, accessibleRestroom: true, autoDoor: true },
     position: { x: 62, y: 46 },
+    ...getCampusCoordinate(0.00127, -0.00014),
   },
   {
     id: "b_engineering",
@@ -62,6 +65,7 @@ export const buildings: Building[] = [
     recentReport: "401호는 계단식 강의실이라 휠체어 진입이 어렵습니다",
     features: { elevator: true, ramp: false, accessibleRestroom: true, autoDoor: false },
     position: { x: 74, y: 30 },
+    ...getCampusCoordinate(0.00285, 0.00159),
   },
   {
     id: "b_humanities",
@@ -73,6 +77,7 @@ export const buildings: Building[] = [
     recentReport: "자동문 센서가 휠체어 높이를 감지하지 못합니다",
     features: { elevator: true, ramp: true, accessibleRestroom: true, autoDoor: true },
     position: { x: 24, y: 60 },
+    ...getCampusCoordinate(-0.00282, -0.0009),
   },
   {
     id: "b_gym",
@@ -84,6 +89,7 @@ export const buildings: Building[] = [
     recentReport: "장애인 화장실에 청소 도구가 적치되어 있습니다",
     features: { elevator: false, ramp: true, accessibleRestroom: true, autoDoor: false },
     position: { x: 50, y: 70 },
+    ...getCampusCoordinate(-0.00016, -0.00197),
   },
 ];
 

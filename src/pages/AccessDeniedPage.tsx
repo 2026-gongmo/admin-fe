@@ -13,7 +13,7 @@ export const AccessDeniedPage: React.FC = () => {
         <PageState
           kind="denied"
           title="권한이 필요한 관리자 기능입니다"
-          description="현재는 권한 없음 상태를 보여주는 프론트 Mock 화면입니다. 실제 인가는 백엔드 붙여야 함."
+          description="현재는 권한 없음 상태를 보여주는 프론트 Mock 화면입니다. 실제 인가는 아직 구현 안 됨 · 추가 예정."
           actionLabel="설정에서 권한 정책 보기"
           onAction={() => navigate("/settings")}
         />

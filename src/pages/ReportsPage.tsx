@@ -1,12 +1,18 @@
-import React, { useContext, useEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Topbar } from "../components/Topbar";
 import {
   getPublicDataComparisons,
   getReports,
   isHttpMode,
+  createReportNote,
+  updateReportAssignee,
+  updateReportUrgency,
   updateReportStatus,
   ApiError,
+  downloadReportAttachment,
+  getReportAttachments,
+  uploadReportAttachment,
 } from "../services/api";
 import type {
   AccessibilityReport,
@@ -14,6 +20,7 @@ import type {
   PublicDataCoverage,
   Urgency,
   ReportStatus,
+  ReportAttachment,
 } from "../types";
 import {
   ReportStatusBadge,
@@ -83,8 +90,8 @@ const RESOLUTION_CHECKS = [
 
 const ATTACHMENTS = [
   { name: "제보 사진", file: "report-photo.jpg", status: "Mock 파일" },
-  { name: "시설팀 답변서", file: "facility-reply.pdf", status: "백엔드 붙여야 함" },
-  { name: "개선 요청 공문", file: "request-draft.docx", status: "백엔드 붙여야 함" },
+  { name: "시설팀 답변서", file: "facility-reply.pdf", status: "아직 구현 안 됨 · 추가 예정" },
+  { name: "개선 요청 공문", file: "request-draft.docx", status: "아직 구현 안 됨 · 추가 예정" },
   { name: "현장 확인 사진", file: "field-check.jpg", status: "Mock 파일" },
 ];
 
@@ -123,6 +130,9 @@ export const ReportsPage: React.FC = () => {
   const [processMemo, setProcessMemo] = useState("");
   const [processReason, setProcessReason] = useState(PROCESS_REASONS[0]);
   const [department, setDepartment] = useState(DEPARTMENTS[0]);
+  const [attachments, setAttachments] = useState<ReportAttachment[]>([]);
+  const [attachmentUploading, setAttachmentUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [resolutionChecks, setResolutionChecks] = useState<Record<string, boolean>>({
     "현장 확인": true,
     "당사자 안내": false,
@@ -165,6 +175,16 @@ export const ReportsPage: React.FC = () => {
     () => reports.find((r) => r.id === selectedId) ?? null,
     [reports, selectedId]
   );
+
+  useEffect(() => {
+    if (!selected) {
+      setAttachments([]);
+      return;
+    }
+    getReportAttachments(selected.id)
+      .then(setAttachments)
+      .catch(() => setAttachments([]));
+  }, [selected]);
 
   const filtered = useMemo(
     () => {
@@ -245,29 +265,93 @@ export const ReportsPage: React.FC = () => {
     void performStatusChange(status);
   };
 
-  const onAssigneeChange = (assignee: string) => {
+  const onAssigneeChange = async (assignee: string) => {
     if (!selected) return;
-    const value = assignee === "미배정" ? undefined : assignee;
-    setReports((cur) =>
-      cur.map((r) => (r.id === selected.id ? { ...r, assignee: value } : r))
-    );
-    showToast(`담당자가 "${assignee}"(으)로 변경되었습니다. 실제 저장은 백엔드 붙여야 함.`);
+    try {
+      const updated = await updateReportAssignee(selected.id, assignee);
+      if (updated) {
+        setReports((cur) => cur.map((r) => (r.id === updated.id ? updated : r)));
+        showToast(
+          `담당자가 "${assignee}"(으)로 변경되었습니다.${
+            isHttpMode() ? " API에 반영되었습니다." : " Mock 상태입니다."
+          }`
+        );
+      }
+    } catch (error) {
+      const apiError = toApiError(error);
+      showToast(`담당자 저장 실패: ${apiError.message}`, "error");
+    }
   };
 
-  const onUrgencyChange = (urgency: Urgency) => {
+  const onAttachmentSelected = async (file?: File) => {
+    if (!selected || !file) return;
+    setAttachmentUploading(true);
+    try {
+      const uploaded = await uploadReportAttachment(selected.id, file);
+      setAttachments((current) => [uploaded, ...current]);
+      showToast(`첨부파일 "${uploaded.originalFilename}"을 저장했습니다.`);
+    } catch (error) {
+      const apiError = toApiError(error);
+      showToast(`첨부 저장 실패: ${apiError.message}`, "error");
+    } finally {
+      setAttachmentUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const onAttachmentDownload = async (attachment: ReportAttachment) => {
     if (!selected) return;
-    setReports((cur) =>
-      cur.map((r) => (r.id === selected.id ? { ...r, urgency } : r))
-    );
-    showToast(`우선순위가 "${urgencyLabel(urgency)}"(으)로 변경되었습니다. 실제 저장은 백엔드 붙여야 함.`);
+    try {
+      const result = await downloadReportAttachment(
+        selected.id,
+        attachment.id,
+        attachment.originalFilename
+      );
+      downloadBlob(result.blob, result.filename);
+      showToast("첨부파일을 다운로드했습니다.");
+    } catch (error) {
+      const apiError = toApiError(error);
+      showToast(`다운로드 실패: ${apiError.message}`, "error");
+    }
+  };
+
+  const onUrgencyChange = async (urgency: Urgency) => {
+    if (!selected) return;
+    try {
+      const updated = await updateReportUrgency(selected.id, urgency);
+      if (updated) {
+        setReports((cur) => cur.map((r) => (r.id === updated.id ? updated : r)));
+        showToast(
+          `우선순위가 "${urgencyLabel(urgency)}"(으)로 변경되었습니다.${
+            isHttpMode() ? " API에 반영되었습니다." : " Mock 상태입니다."
+          }`
+        );
+      }
+    } catch (error) {
+      const apiError = toApiError(error);
+      showToast(`우선순위 저장 실패: ${apiError.message}`, "error");
+    }
   };
 
   const toggleResolutionCheck = (item: string) => {
     setResolutionChecks((cur) => ({ ...cur, [item]: !cur[item] }));
   };
 
-  const saveProcessMemo = () => {
-    showToast("처리 메모 저장은 Mock 동작입니다. 실제 저장은 백엔드 붙여야 함.");
+  const saveProcessMemo = async () => {
+    if (!selected) return;
+    const content = processMemo.trim();
+    if (!content) {
+      showToast("저장할 처리 메모를 입력해 주세요.", "warning");
+      return;
+    }
+    try {
+      await createReportNote(selected.id, `[${processReason} · ${department}] ${content}`);
+      setProcessMemo("");
+      showToast(isHttpMode() ? "처리 메모가 API에 저장되었습니다." : "처리 메모가 Mock 저장되었습니다.");
+    } catch (error) {
+      const apiError = toApiError(error);
+      showToast(`처리 메모 저장 실패: ${apiError.message}`, "error");
+    }
   };
 
   const updateQueryParam = (key: string, value: string | null) => {
@@ -353,7 +437,7 @@ export const ReportsPage: React.FC = () => {
             placeholder="건물명, 문제유형, 제보 내용, 담당자 검색"
           />
           <span className="small-muted">
-            검색 결과 {filtered.length}건 · {isHttpMode() ? "서버 query parameter 적용" : "실제 서버 검색은 백엔드 붙여야 함"}
+            검색 결과 {filtered.length}건 · {isHttpMode() ? "서버 query parameter 적용" : "실제 서버 검색은 아직 구현 안 됨 · 추가 예정"}
           </span>
           <label className="filter select-filter">
             <span>정렬</span>
@@ -472,7 +556,7 @@ export const ReportsPage: React.FC = () => {
               <PageState
                 kind="empty"
                 title="검색 조건에 맞는 제보가 없습니다"
-                description="필터를 초기화하거나 다른 검색어를 입력해 주세요. 서버 검색은 백엔드 붙여야 함."
+                description="필터를 초기화하거나 다른 검색어를 입력해 주세요. 서버 검색은 아직 구현 안 됨 · 추가 예정."
                 actionLabel="필터 초기화"
                 onAction={() => {
                   resetFilters();
@@ -587,7 +671,9 @@ export const ReportsPage: React.FC = () => {
                       ))}
                     </div>
                   </div>
-                  <span className="backend-needed">배정/우선순위 저장은 백엔드 붙여야 함</span>
+                  <span className={isHttpMode() ? "status done" : "backend-needed"}>
+                    {isHttpMode() ? "배정/우선순위 API 저장" : "배정/우선순위 저장은 아직 구현 안 됨 · 추가 예정"}
+                  </span>
                 </div>
 
                 <div className="public-link-card">
@@ -612,7 +698,7 @@ export const ReportsPage: React.FC = () => {
                     </>
                   ) : (
                     <div className="small-muted">
-                      연결된 공공데이터 비교 항목이 없습니다. 백엔드 붙여야 함.
+                      연결된 공공데이터 비교 항목이 없습니다. 아직 구현 안 됨 · 추가 예정.
                     </div>
                   )}
                 </div>
@@ -636,7 +722,7 @@ export const ReportsPage: React.FC = () => {
                         <button
                           className="h-btn"
                           onClick={() =>
-                            showToast("중복 제보 병합은 Mock 동작입니다. 실제 병합 저장은 백엔드 붙여야 함.")
+                            showToast("중복 제보 병합은 Mock 동작입니다. 실제 병합 저장은 아직 구현 안 됨 · 추가 예정.")
                           }
                         >
                           병합
@@ -644,7 +730,7 @@ export const ReportsPage: React.FC = () => {
                         <button
                           className="h-btn"
                           onClick={() =>
-                            showToast("대표 제보 지정은 Mock 동작입니다. 실제 저장은 백엔드 붙여야 함.")
+                            showToast("대표 제보 지정은 Mock 동작입니다. 실제 저장은 아직 구현 안 됨 · 추가 예정.")
                           }
                         >
                           대표 지정
@@ -652,7 +738,7 @@ export const ReportsPage: React.FC = () => {
                       </div>
                     </div>
                   ))}
-                  <span className="backend-needed">중복 판정/병합 저장은 백엔드 붙여야 함</span>
+                  <span className="backend-needed">중복 판정/병합 저장은 아직 구현 안 됨 · 추가 예정</span>
                 </div>
 
                 <div className="draft-card">
@@ -672,7 +758,7 @@ export const ReportsPage: React.FC = () => {
                     <span>{draftAction(selected)}</span>
                   </div>
                   <div className="row-flex" style={{ justifyContent: "space-between" }}>
-                    <span className="backend-needed">문서 저장/전송은 백엔드 붙여야 함</span>
+                    <span className="backend-needed">문서 저장/전송은 아직 구현 안 됨 · 추가 예정</span>
                     <button
                       className="h-btn"
                       onClick={() =>
@@ -740,20 +826,56 @@ export const ReportsPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <div className="field-l">첨부파일 Mock 영역</div>
+                    <div className="field-l">첨부파일</div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      style={{ display: "none" }}
+                      onChange={(event) => void onAttachmentSelected(event.target.files?.[0])}
+                    />
+                    <div className="row-flex" style={{ marginBottom: 8 }}>
+                      <button
+                        className="h-btn"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={attachmentUploading}
+                      >
+                        {attachmentUploading ? "업로드 중" : "파일 업로드"}
+                      </button>
+                      <span className="small-muted">
+                        {isHttpMode() ? "Spring Boot 파일 저장소에 저장" : "Mock 첨부 저장"}
+                      </span>
+                    </div>
                     <div className="attach-grid">
-                      {ATTACHMENTS.map((item) => (
+                      {(attachments.length > 0 ? attachments.map((item) => ({
+                        name: item.uploadedBy,
+                        file: item.originalFilename,
+                        status: `${Math.ceil(item.sizeBytes / 1024)}KB`,
+                        id: item.id,
+                      })) : ATTACHMENTS).map((item) => (
                         <div className="attach-card" key={item.name}>
                           <b>{item.name}</b>
                           <span>{item.file}</span>
                           <em>{item.status}</em>
+                          {"id" in item && (
+                            <button
+                              className="h-btn"
+                              onClick={() => {
+                                const attachment = attachments.find((target) => target.id === item.id);
+                                if (attachment) void onAttachmentDownload(attachment);
+                              }}
+                            >
+                              다운로드
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
                   </div>
 
                   <div className="row-flex" style={{ justifyContent: "space-between" }}>
-                    <span className="backend-needed">처리 메모/첨부 저장은 백엔드 붙여야 함</span>
+	                    <span className={isHttpMode() ? "status done" : "backend-needed"}>
+	                      {isHttpMode() ? "처리 메모/첨부 API 저장" : "처리 메모/첨부 Mock 저장"}
+	                    </span>
                     <button className="h-btn primary" onClick={saveProcessMemo}>
                       처리 내용 저장
                     </button>
@@ -877,7 +999,7 @@ function reportHistory(report: AccessibilityReport): ActionTimelineItem[] {
         time: "대기 중",
         actor: "장애학생지원센터",
         action: "센터 검토 대기",
-        note: "담당자 배정과 검토 시작 저장은 백엔드 붙여야 함.",
+        note: "담당자 배정과 검토 시작 저장은 아직 구현 안 됨 · 추가 예정.",
         tone: "warning",
       },
     ];
@@ -896,7 +1018,7 @@ function reportHistory(report: AccessibilityReport): ActionTimelineItem[] {
         time: "다음",
         actor: "시설관리팀",
         action: "시설팀 전달 전 근거 정리",
-        note: "개선 요청서 초안과 첨부파일 저장은 백엔드 붙여야 함.",
+        note: "개선 요청서 초안과 첨부파일 저장은 아직 구현 안 됨 · 추가 예정.",
       },
     ];
   }
@@ -914,7 +1036,7 @@ function reportHistory(report: AccessibilityReport): ActionTimelineItem[] {
         time: "리포트",
         actor: "관리자",
         action: "월간 리포트 반영 가능",
-        note: "리포트 스냅샷 생성은 백엔드 붙여야 함.",
+        note: "리포트 스냅샷 생성은 아직 구현 안 됨 · 추가 예정.",
       },
     ];
   }
@@ -924,7 +1046,7 @@ function reportHistory(report: AccessibilityReport): ActionTimelineItem[] {
       time: "완료",
       actor: "시설관리팀",
       action: "조치 완료",
-      note: "현장 재확인과 당사자 안내 이력 저장은 백엔드 붙여야 함.",
+      note: "현장 재확인과 당사자 안내 이력 저장은 아직 구현 안 됨 · 추가 예정.",
       tone: "success",
     },
     {
@@ -939,4 +1061,15 @@ function reportHistory(report: AccessibilityReport): ActionTimelineItem[] {
 function toApiError(error: unknown): ApiError {
   if (error instanceof ApiError) return error;
   return new ApiError("UNKNOWN_ERROR", "알 수 없는 API 오류가 발생했습니다.");
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
 }
