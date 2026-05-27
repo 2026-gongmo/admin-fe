@@ -199,6 +199,7 @@ export type PublicDataCoverage = "matched" | "missing" | "outdated" | "field_onl
 
 export interface PublicDataSource {
   id: string;
+  datasetKey?: string;
   name: string;
   provider: string;
   category: "대학" | "시설" | "건축물" | "교통" | "복지";
@@ -227,6 +228,45 @@ export interface PublicDataNormalization {
     status: string;
   }[];
   generatedAt: string;
+}
+
+export interface PublicDataRawRecord {
+  id: string;
+  datasetKey: string;
+  datasetName: string;
+  pageNo: number;
+  recordIndex: number;
+  rawPayload: string;
+  sampleSummary: string;
+  createdAt: string;
+}
+
+export interface PublicDataDatasetStatus {
+  datasetKey: string;
+  datasetName: string;
+  envName: string;
+  endpointConfigured: boolean;
+  status: "configured" | "missing-endpoint" | string;
+  note: string;
+}
+
+export interface PublicDataNormalizedRecord {
+  rawRecordId: string;
+  datasetKey: string;
+  datasetName: string;
+  pageNo: number;
+  recordIndex: number;
+  buildingName?: string;
+  address?: string;
+  latitude?: string;
+  longitude?: string;
+  accessibilityFeature?: string;
+  safetyFacility?: string;
+  contact?: string;
+  operatingHours?: string;
+  lastUpdatedAt?: string;
+  matchedFields: Record<string, string>;
+  createdAt: string;
 }
 
 export type WorkflowStage =

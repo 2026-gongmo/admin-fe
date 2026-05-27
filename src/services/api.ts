@@ -38,6 +38,9 @@ import type {
   AdminStats,
   PublicDataSource,
   PublicDataComparison,
+  PublicDataDatasetStatus,
+  PublicDataNormalizedRecord,
+  PublicDataRawRecord,
   ImprovementTask,
   WorkflowStage,
   Urgency,
@@ -231,6 +234,7 @@ interface BackendHelpRequest {
 
 interface BackendPublicDataSource {
   id: number;
+  datasetKey?: string | null;
   name: string;
   provider: string;
   category: PublicDataSource["category"];
@@ -260,8 +264,10 @@ interface BackendPublicDataSyncResponse {
   attempted: boolean;
   success: boolean;
   mode: "disabled" | "missing-key" | "missing-endpoint" | "unknown-dataset" | "external-live" | "external-failed";
+  datasetKey?: string | null;
   datasetName: string;
   fetchedCount: number;
+  rawRecordCount?: number;
   totalCount?: number | null;
   message: string;
   syncedAt: string;
@@ -281,6 +287,45 @@ interface BackendPublicDataNormalization {
   comparisonCount: number;
   fields: PublicDataNormalization["fields"];
   generatedAt: string;
+}
+
+interface BackendPublicDataRawRecord {
+  id: number;
+  datasetKey: string;
+  datasetName: string;
+  pageNo: number;
+  recordIndex: number;
+  rawPayload: string;
+  sampleSummary: string;
+  createdAt: string;
+}
+
+interface BackendPublicDataDatasetStatus {
+  datasetKey: string;
+  datasetName: string;
+  envName: string;
+  endpointConfigured: boolean;
+  status: string;
+  note: string;
+}
+
+interface BackendPublicDataNormalizedRecord {
+  rawRecordId: number;
+  datasetKey: string;
+  datasetName: string;
+  pageNo: number;
+  recordIndex: number;
+  buildingName?: string | null;
+  address?: string | null;
+  latitude?: string | null;
+  longitude?: string | null;
+  accessibilityFeature?: string | null;
+  safetyFacility?: string | null;
+  contact?: string | null;
+  operatingHours?: string | null;
+  lastUpdatedAt?: string | null;
+  matchedFields: Record<string, string>;
+  createdAt: string;
 }
 
 interface BackendAuditLog {
@@ -914,8 +959,10 @@ export async function syncPublicDataAccessibilityFacilities(): Promise<BackendPu
     attempted: false,
     success: false,
     mode: "missing-key",
+    datasetKey: "accessibility-facilities",
     datasetName: "전국 장애인 편의시설 표준데이터",
     fetchedCount: 0,
+    rawRecordCount: 0,
     totalCount: null,
     message: "Mock 모드에서는 실제 공공데이터 API를 호출하지 않습니다. 백엔드에 DATA_GO_KR_SERVICE_KEY와 endpoint 설정이 필요합니다.",
     syncedAt: new Date().toISOString(),
@@ -931,8 +978,10 @@ export async function syncAllPublicDataSources(): Promise<BackendPublicDataSyncB
     attempted: false,
     success: false,
     mode: "missing-key",
+    datasetKey: source.datasetKey ?? source.id,
     datasetName: source.name,
     fetchedCount: 0,
+    rawRecordCount: 0,
     totalCount: null,
     message: "Mock 모드에서는 실제 공공데이터 API를 호출하지 않습니다. 백엔드 .env에 인증키와 dataset path 설정이 필요합니다.",
     syncedAt: new Date().toISOString(),
@@ -973,6 +1022,49 @@ export async function getPublicDataNormalization(): Promise<PublicDataNormalizat
       },
     ],
   });
+}
+
+export async function getPublicDataRawRecords(datasetKey?: string): Promise<PublicDataRawRecord[]> {
+  if (isHttpMode()) {
+    const query = datasetKey ? `?datasetKey=${encodeURIComponent(datasetKey)}` : "";
+    const response = await httpRequest<BackendPublicDataRawRecord[]>(
+      `/api/admin/public-data/raw-records${query}`
+    );
+    return response.map(mapPublicDataRawRecord);
+  }
+  return delay([]);
+}
+
+export async function getPublicDataDatasetStatuses(): Promise<PublicDataDatasetStatus[]> {
+  if (isHttpMode()) {
+    const response = await httpRequest<BackendPublicDataDatasetStatus[]>(
+      "/api/admin/public-data/dataset-status"
+    );
+    return response.map(mapPublicDataDatasetStatus);
+  }
+  return delay(
+    publicDataSources.map((source) => ({
+      datasetKey: source.datasetKey ?? source.id,
+      datasetName: source.name,
+      envName: "MOCK_MODE",
+      endpointConfigured: false,
+      status: "missing-endpoint",
+      note: "Mock 모드에서는 실제 endpoint 설정을 조회하지 않습니다.",
+    }))
+  );
+}
+
+export async function getPublicDataNormalizedRecords(
+  datasetKey?: string
+): Promise<PublicDataNormalizedRecord[]> {
+  if (isHttpMode()) {
+    const query = datasetKey ? `?datasetKey=${encodeURIComponent(datasetKey)}` : "";
+    const response = await httpRequest<BackendPublicDataNormalizedRecord[]>(
+      `/api/admin/public-data/normalized-records${query}`
+    );
+    return response.map(mapPublicDataNormalizedRecord);
+  }
+  return delay([]);
 }
 
 export async function getAuditLogs(): Promise<AuditLog[]> {
@@ -1375,6 +1467,7 @@ function mapHelpRequest(request: BackendHelpRequest): HelpRequest {
 function mapPublicDataSource(source: BackendPublicDataSource): PublicDataSource {
   return {
     id: String(source.id),
+    datasetKey: source.datasetKey ?? undefined,
     name: source.name,
     provider: source.provider,
     category: source.category,
@@ -1395,5 +1488,54 @@ function mapPublicDataComparison(
     coverage: comparison.coverage,
     risk: comparison.risk,
     action: comparison.action,
+  };
+}
+
+function mapPublicDataRawRecord(record: BackendPublicDataRawRecord): PublicDataRawRecord {
+  return {
+    id: String(record.id),
+    datasetKey: record.datasetKey,
+    datasetName: record.datasetName,
+    pageNo: record.pageNo,
+    recordIndex: record.recordIndex,
+    rawPayload: record.rawPayload,
+    sampleSummary: record.sampleSummary,
+    createdAt: record.createdAt.replace("T", " ").slice(0, 16),
+  };
+}
+
+function mapPublicDataDatasetStatus(
+  status: BackendPublicDataDatasetStatus
+): PublicDataDatasetStatus {
+  return {
+    datasetKey: status.datasetKey,
+    datasetName: status.datasetName,
+    envName: status.envName,
+    endpointConfigured: status.endpointConfigured,
+    status: status.status,
+    note: status.note,
+  };
+}
+
+function mapPublicDataNormalizedRecord(
+  record: BackendPublicDataNormalizedRecord
+): PublicDataNormalizedRecord {
+  return {
+    rawRecordId: String(record.rawRecordId),
+    datasetKey: record.datasetKey,
+    datasetName: record.datasetName,
+    pageNo: record.pageNo,
+    recordIndex: record.recordIndex,
+    buildingName: record.buildingName ?? undefined,
+    address: record.address ?? undefined,
+    latitude: record.latitude ?? undefined,
+    longitude: record.longitude ?? undefined,
+    accessibilityFeature: record.accessibilityFeature ?? undefined,
+    safetyFacility: record.safetyFacility ?? undefined,
+    contact: record.contact ?? undefined,
+    operatingHours: record.operatingHours ?? undefined,
+    lastUpdatedAt: record.lastUpdatedAt ?? undefined,
+    matchedFields: record.matchedFields,
+    createdAt: record.createdAt.replace("T", " ").slice(0, 16),
   };
 }
