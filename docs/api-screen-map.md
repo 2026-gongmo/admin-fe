@@ -32,9 +32,18 @@
 | 공공데이터 | `getPublicDataComparisons()` | `GET /api/admin/public-data/comparisons` | seed API 연결 |
 | 공공데이터 | `getPublicDataProviderStatus()` | `GET /api/admin/public-data/provider-status` | seed/API 키 상태 연결 |
 | 공공데이터 | `syncAllPublicDataSources()` | `POST /api/admin/public-data/sync/all` | 일부 data.go.kr API 연결 |
+| 공공데이터 | `syncAllPublicDataSourcesFull()` | `POST /api/admin/public-data/sync/all/full` | endpoint 설정 dataset 기준 전체 페이지 수집 |
+| 공공데이터 | `getPublicDataRawRecords()` | `GET /api/admin/public-data/raw-records` | 원본 데이터 상세 조회 연결 |
+| 공공데이터 | `getPublicDataDatasetStatuses()` | `GET /api/admin/public-data/dataset-status` | endpoint 설정 현황 연결 |
+| 공공데이터 | `getPublicDataNormalizedRecords()` | `GET /api/admin/public-data/normalized-records` | 정규화 미리보기 연결 |
 | 워크플로우 | `getImprovementTasks(query?)` | `GET /api/admin/improvement-tasks` | Spring Boot API 연결 |
 | 워크플로우 | `updateImprovementTaskStage(id, stage)` | `PATCH /api/admin/improvement-tasks/{taskId}/stage` | Spring Boot API 저장 |
 | 월간 리포트 | `getMonthlyReport()` | `GET /api/admin/monthly-report` | Spring Boot API 연결 |
+| 월간 리포트 | `downloadMonthlyReportPdf()` | `GET /api/admin/monthly-report/export/pdf?yearMonth=YYYY-MM` | Spring Boot API 다운로드 |
+| 월간 리포트 | `downloadMonthlyReportCsv()` | `GET /api/admin/monthly-report/export/csv?yearMonth=YYYY-MM` | Spring Boot API 다운로드 |
+| 월간 리포트 | `getMonthlyReportSnapshots()` | `GET /api/admin/monthly-report/snapshots` | 스냅샷 이력 연결 |
+| 감사 로그 | `getAuditLogs()` | `GET /api/admin/audit-logs` | Spring Boot API 연결 |
+| 감사 로그 | `downloadAuditLogsCsv()` | `GET /api/admin/audit-logs/export/csv` | Spring Boot API 다운로드 |
 
 ## 실패/에러 UI 매핑
 
@@ -73,19 +82,16 @@ Mock 모드의 실패 시뮬레이션은 `window.localStorage`의 `onda_mock_api
 
 ## 연결 우선순위
 
-1. `GET /api/admin/stories`
-2. `PATCH /api/admin/stories/{storyId}/visibility`
-3. `GET /api/admin/improvement-tasks`
-4. `PATCH /api/admin/improvement-tasks/{taskId}/stage`
-5. `GET /api/admin/monthly-reports/{yearMonth}`
-6. `POST /api/admin/monthly-reports/{yearMonth}/exports/pdf`
-7. `POST /api/admin/reports/merge`
-8. 파일 업로드/다운로드 API
-9. 실제 공공데이터 외부 API 배치 동기화
+1. 제보/도움 요청 상세 패널의 단건 API 재조회 적용
+2. 서버 페이징/정렬/검색 API 고도화
+3. `POST /api/admin/reports/merge`
+4. 응답자 배정과 실시간 알림
+5. 미설정 공공데이터 dataset endpoint 공식 명세 확인
+6. 운영 DB 전환과 권한별 API 인가 고도화
 
 ## 36차 백엔드 연결 메모
 
-- 1차 연결은 `reports`, `help-requests`, `dashboard`, `buildings`, `public-data seed`까지 진행했습니다.
+- 1차 연결은 `reports`, `help-requests`, `dashboard`, `buildings`, `stories`, `workflow`, `monthly-report`, `public-data`, `audit-logs`까지 진행했습니다.
 - URL query의 `selected`는 프론트 상세 패널 선택용이므로 서버에 보낼 필요가 없습니다.
 - `status`, `q`, `stage` 등 필터 값은 서버 query parameter로 보냅니다.
 - 변경성 API는 응답 후 프론트 목록을 재조회하거나, 응답 DTO로 로컬 상태를 갱신합니다.

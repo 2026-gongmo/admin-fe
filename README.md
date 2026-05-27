@@ -254,7 +254,7 @@ Spring Boot API -> src/services/httpClient.ts -> src/services/api.ts -> src/page
 | 저장 | 일부 변경은 API 저장, H2 메모리라 서버 재시작 시 초기화 | 운영 DB 저장, 감사 로그 조회 UI 연결 |
 | AI | 익명화/추천 결과는 Mock | LLM API 연동 전 보안 리뷰 후 실제 연결 |
 | 공공데이터 | 70개 seed, 68개 동기화 슬롯, 일부 실제 API path 설정 기반 원본/정규화 조회 | 미설정 dataset endpoint 보강, 원천별 필드 정규화 고도화 |
-| 리포트 | PDF/CSV 다운로드 API와 스냅샷 저장 연결, 공유 버튼은 Mock Toast | 공문/외부 공유 자동화 |
+| 리포트 | PDF/CSV 다운로드 API와 스냅샷 저장 연결, 공유 버튼은 안내 Toast | 공문/외부 공유 자동화 |
 | 개인정보 | 실제 데이터 없음 | 장애 관련 민감정보, 위치정보 보관 정책 필요 |
 
 ## 문서

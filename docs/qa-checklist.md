@@ -79,7 +79,8 @@ VITE_API_MODE=http VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --hos
 - [ ] Mock 기능은 실제 저장처럼 표현하지 않는가?
 - [ ] `아직 구현 안 됨 · 추가 예정`, `Mock`, `추가 필요` 표현이 필요한 곳에 보이는가?
 - [ ] CSV 내보내기는 HTTP 모드에서 Spring Boot API 다운로드, Mock 모드에서 Mock 다운로드로 동작하는가?
-- [ ] PDF 내보내기와 공유/공문 액션은 아직 구현 안 됨 · 추가 예정으로 표시되는가?
+- [ ] PDF 내보내기는 HTTP 모드에서 Spring Boot API 다운로드, Mock 모드에서 Mock 다운로드로 동작하는가?
+- [ ] 공유/공문/외부 전송 액션은 아직 구현 안 됨 · 추가 예정으로 표시되는가?
 - [ ] 위험 작업 전 ConfirmModal이 표시되는가?
 - [ ] 로딩/빈 상태가 공통 PageState 형태로 표시되는가?
 - [ ] 목록 로딩 중 SkeletonTable이 깨지지 않는가?

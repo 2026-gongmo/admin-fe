@@ -21,7 +21,7 @@
 | 인증 | 내 정보 조회 | GET | `/api/admin/me` | 34차 연결 완료 |
 | 인증 | 로그아웃 | POST | `/api/admin/auth/logout` | 로컬 토큰 제거 + API 호출 준비 |
 | 접근성 제보 | 제보 목록 | GET | `/api/admin/reports` | 34차 연결 완료 |
-| 접근성 제보 | 제보 상세 | GET | `/api/admin/reports/{reportId}` | 아직 구현 안 됨 · 추가 예정 |
+| 접근성 제보 | 제보 상세 | GET | `/api/admin/reports/{reportId}` | Spring Boot API 구현, 화면은 목록 응답 기반 상세 패널 사용 |
 | 접근성 제보 | 상태 변경 | PATCH | `/api/admin/reports/{reportId}/status` | 34차 연결 완료 |
 | 접근성 제보 | 담당자 배정 | PATCH | `/api/admin/reports/{reportId}/assignee` | 연결 완료 |
 | 접근성 제보 | 우선순위 변경 | PATCH | `/api/admin/reports/{reportId}/priority` | 연결 완료 |
@@ -31,10 +31,14 @@
 | 공공데이터 | 현장 제보 비교 | GET | `/api/admin/public-data/comparisons` | seed API 연결 완료 |
 | 공공데이터 | 외부 API 설정 상태 | GET | `/api/admin/public-data/provider-status` | 연결 완료 |
 | 공공데이터 | 전체 샘플 동기화 | POST | `/api/admin/public-data/sync/all` | 일부 data.go.kr API 연결 |
+| 공공데이터 | 전체 페이지 수집 | POST | `/api/admin/public-data/sync/all/full` | endpoint 설정된 dataset 기준 연결 |
+| 공공데이터 | 원본 데이터 조회 | GET | `/api/admin/public-data/raw-records` | 연결 완료 |
+| 공공데이터 | endpoint 설정 현황 | GET | `/api/admin/public-data/dataset-status` | 연결 완료 |
+| 공공데이터 | 정규화 미리보기 | GET | `/api/admin/public-data/normalized-records` | 연결 완료 |
 | 반복 분석 | 분석 요약 | GET | `/api/admin/analysis/summary` | 연결 완료 |
 | 반복 분석 | 반복 문제 목록 | GET | `/api/admin/analysis/repeated-issues` | 연결 완료 |
 | 도움 요청 | 도움 요청 목록 | GET | `/api/admin/help-requests` | 34차 연결 완료 |
-| 도움 요청 | 도움 요청 상세 | GET | `/api/admin/help-requests/{requestId}` | 아직 구현 안 됨 · 추가 예정 |
+| 도움 요청 | 도움 요청 상세 | GET | `/api/admin/help-requests/{requestId}` | Spring Boot API 구현, 화면은 목록 응답 기반 상세 패널 사용 |
 | 도움 요청 | 상태 변경 | PATCH | `/api/admin/help-requests/{requestId}/status` | 34차 연결 완료 |
 | 도움 요청 | 센터 판단 저장 | PATCH | `/api/admin/help-requests/{requestId}/decision` | 연결 완료 |
 | 경험 피드 | 피드 목록 | GET | `/api/admin/stories` | 연결 완료 |
@@ -164,8 +168,8 @@ VITE_API_MODE=http VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --hos
 
 ### 아직 Mock 또는 추가 예정인 영역
 
-- 제보 상세 단건 조회, 파일 검증 고도화
-- 도움 요청 상세 단건 조회, 응답자 배정, 실시간 알림
+- 제보/도움 요청 상세 화면의 서버 단건 재조회 적용과 파일 검증 고도화
+- 도움 요청 응답자 배정, 실시간 알림
 - 외부 LLM 기반 AI 익명화
 - 센터 공유, 개선 요청서/Notion 전송
 - 운영 DB 실연결과 migration
@@ -173,21 +177,15 @@ VITE_API_MODE=http VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --hos
 
 ## 다음 API 연결 우선순위
 
-프론트 구현을 유지하면서 Spring Boot API를 붙일 때는 아래 순서가 가장 현실적입니다.
+주요 Spring Boot API 연결은 완료했으므로, 다음은 실제 서비스 품질을 올리는 순서가 현실적입니다.
 
 | 순서 | API | 이유 |
 |---:|---|---|
-| 1 | `GET /api/admin/reports` | 핵심 목록 화면을 실제 데이터로 전환 |
-| 2 | `PATCH /api/admin/reports/{reportId}/status` | ConfirmModal, Toast, 상세 패널 흐름 검증 |
-| 3 | `PATCH /api/admin/reports/{reportId}/assignee` | 담당자 운영 UI 실제 저장 |
-| 4 | `PATCH /api/admin/reports/{reportId}/priority` | 개선 우선순위 운영 UI 실제 저장 |
-| 5 | `POST /api/admin/reports/{reportId}/notes` | 처리 메모와 관리자 이력 저장 |
-| 6 | `GET /api/admin/help-requests` | 긴급 도움 요청 목록 연결 |
-| 7 | `PATCH /api/admin/help-requests/{requestId}/status` | 요청 종료/응답 완료 저장 |
-| 8 | `GET /api/admin/stories` | 경험 피드 검수 목록 연결 |
-| 9 | `PATCH /api/admin/stories/{storyId}/visibility` | 공개/비공개 검수 저장 |
-| 10 | `GET /api/admin/improvement-tasks` | 개선 워크플로우 연결 |
-| 11 | `PATCH /api/admin/improvement-tasks/{taskId}/stage` | 과제 단계 변경 저장 |
-| 12 | `GET /api/admin/monthly-report/export/csv` | 월간 리포트 CSV 다운로드 |
+| 1 | `GET /api/admin/reports/{reportId}` | 상세 패널을 목록 응답 기반에서 단건 재조회 기반으로 고도화 |
+| 2 | `GET /api/admin/help-requests/{requestId}` | 도움 요청 상세도 단건 재조회와 권한 체크를 분리 |
+| 3 | 서버 페이징/정렬/검색 | seed 데이터가 늘어났을 때 표 성능과 URL query를 안정화 |
+| 4 | 첨부파일 검증 고도화 | 확장자, MIME, 용량, 악성 파일 정책 보강 |
+| 5 | 미설정 공공데이터 endpoint 보강 | 후보 dataset 중 실제 호출 가능한 항목 확대 |
+| 6 | 운영 DB/권한별 인가 | 실제 서비스 전 데이터 영속화와 민감정보 접근 제어 강화 |
 
-PDF 생성, 파일 업로드, 공공데이터 전체 배치, 실제 AI 익명화 API는 2차 이후로 미뤄도 됩니다.
+PDF 생성, 파일 업로드/다운로드, 공공데이터 전체 페이지 수집 endpoint는 Spring Boot MVP에 포함했습니다. 실제 외부 LLM 기반 AI 익명화, 운영 DB 전환, 권한별 인가 고도화는 2차 이후로 유지합니다.
