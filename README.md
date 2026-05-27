@@ -164,7 +164,7 @@ VITE_DEMO_ADMIN_PASSWORD=onda1234!
 
 ## 구현 포인트
 
-- `src/services/api.ts`를 데이터 접근 경계로 두어 Mock 모드와 Spring Boot API 일부 연결 모드를 분리했습니다.
+- `src/services/api.ts`를 데이터 접근 경계로 두어 Mock 모드와 Spring Boot API 연결 모드를 분리했습니다.
 - `/login`에서 관리자 이메일/비밀번호로 로그인하고, HTTP 모드에서는 `Authorization: Bearer <token>` 헤더를 붙여 API를 호출합니다.
 - HTTP 데모 모드에서는 백엔드 재시작으로 토큰이 만료되어도 401 응답 시 seed 계정 자동 재로그인을 한 번 시도합니다.
 - 제보, 도움 요청, 경험 피드, 워크플로우 화면은 URL query로 검색/필터/상세 선택 상태를 재현할 수 있습니다.
@@ -249,9 +249,9 @@ Spring Boot API -> src/services/httpClient.ts -> src/services/api.ts -> src/page
 
 | 구분 | 현재 한계 | 다음 개선 |
 |---|---|---|
-| 데이터 | 일부 화면은 Spring Boot seed API, 나머지는 Mock | DB 영속화와 서버 페이징 |
+| 데이터 | 주요 화면은 Spring Boot API 연결 가능, 기본 실행은 Mock | 운영 DB 전환과 서버 페이징 |
 | 인증/인가 | seed 관리자 로그인 + 역할 미리보기 | JWT/세션 만료/재발급, API 인가 |
-| 저장 | 일부 변경은 API 저장, H2 메모리라 서버 재시작 시 초기화 | 운영 DB 저장, 감사 로그 조회 UI 연결 |
+| 저장 | 주요 변경은 API 저장, 기본은 로컬 H2 파일 DB | 운영 DB 저장, 감사 로그 검색/필터 고도화 |
 | AI | 익명화/추천 결과는 Mock | LLM API 연동 전 보안 리뷰 후 실제 연결 |
 | 공공데이터 | 70개 seed, 68개 동기화 슬롯, 일부 실제 API path 설정 기반 원본/정규화 조회 | 미설정 dataset endpoint 보강, 원천별 필드 정규화 고도화 |
 | 리포트 | PDF/CSV 다운로드 API와 스냅샷 저장 연결, 공유 버튼은 안내 Toast | 공문/외부 공유 자동화 |
