@@ -21,7 +21,9 @@ ONDA 관리자 웹은 장애대학생의 접근성 제보, 도움 요청, 경험
 |---|---|
 | [`docs/SUBMISSION_SUMMARY.md`](docs/SUBMISSION_SUMMARY.md) | 구현 범위, 시연 흐름, 공공데이터 상태, 배포 주의 |
 | [`docs/DEMO_CHECKLIST.md`](docs/DEMO_CHECKLIST.md) | 공모전 5분 시연 순서와 발표 멘트 |
+| [`docs/DEMO_FAILURE_PLAN.md`](docs/DEMO_FAILURE_PLAN.md) | 백엔드/API/인터넷 문제 시 시연 대체 플랜 |
 | [`docs/GITHUB_UPLOAD_CHECKLIST.md`](docs/GITHUB_UPLOAD_CHECKLIST.md) | GitHub 업로드 전 확인 사항 |
+| [`docs/PRESENTATION_STATUS_TABLE.md`](docs/PRESENTATION_STATUS_TABLE.md) | PPT에 넣을 구현 상태 표 |
 
 ## 구현/Mock/추가 예정 구분
 

@@ -74,3 +74,11 @@ npm run build
 - `.env`, API Key, DB password, token은 화면이나 발표자료에 노출하지 않습니다.
 - 백엔드가 실제 운영 배포된 것처럼 말하지 않습니다.
 - Oracle 배포와 운영 DB 연결은 승인 전에는 진행하지 않습니다.
+
+## 실패 대비
+
+자세한 대체 플랜은 [`DEMO_FAILURE_PLAN.md`](DEMO_FAILURE_PLAN.md)를 확인합니다.
+
+- 백엔드가 안 켜지면 Mock 모드로 관리자 웹 흐름을 먼저 보여줍니다.
+- 공공데이터 API가 실패하면 seed/저장 원본/endpoint 설정 현황으로 설명합니다.
+- 인터넷이 불안정하면 로컬 화면과 캡처 기준으로 시연합니다.
