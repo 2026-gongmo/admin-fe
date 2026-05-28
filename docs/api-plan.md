@@ -16,7 +16,7 @@
 |---|---|---:|---|---|
 | 대시보드 | KPI 조회 | GET | `/api/admin/dashboard/stats` | 연결 완료 |
 | 대시보드 | 건물 목록 | GET | `/api/admin/buildings` | 연결 완료 |
-| 대시보드 | AI 우선 조치 추천 | GET | `/api/admin/recommendations` | 연결 완료 |
+| 대시보드 | 관리자 검토용 추천 | GET | `/api/admin/recommendations` | 연결 완료 |
 | 인증 | 관리자 로그인 | POST | `/api/admin/auth/login` | 34차 연결 완료 |
 | 인증 | 내 정보 조회 | GET | `/api/admin/me` | 34차 연결 완료 |
 | 인증 | 로그아웃 | POST | `/api/admin/auth/logout` | 로컬 토큰 제거 + API 호출 준비 |
@@ -43,7 +43,7 @@
 | 도움 요청 | 센터 판단 저장 | PATCH | `/api/admin/help-requests/{requestId}/decision` | 연결 완료 |
 | 경험 피드 | 피드 목록 | GET | `/api/admin/stories` | 연결 완료 |
 | 경험 피드 | 공개 상태 변경 | PATCH | `/api/admin/stories/{storyId}/visibility` | 연결 완료 |
-| 경험 피드 | AI 익명화 요청 | POST | `/api/admin/stories/{storyId}/anonymize` | 규칙 기반 API 연결 |
+| 경험 피드 | 특정 가능성 방지용 익명화 요청 | POST | `/api/admin/stories/{storyId}/anonymize` | 규칙 기반 API 연결 |
 | 워크플로우 | 개선 과제 목록 | GET | `/api/admin/improvement-tasks` | 연결 완료 |
 | 워크플로우 | 개선 단계 변경 | PATCH | `/api/admin/improvement-tasks/{taskId}/stage` | 연결 완료 |
 | 월간 리포트 | 월간 리포트 조회 | GET | `/api/admin/monthly-report` | 연결 완료 |
@@ -170,7 +170,7 @@ VITE_API_MODE=http VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --hos
 
 - 제보/도움 요청 상세 화면의 서버 단건 재조회 적용과 파일 검증 고도화
 - 도움 요청 응답자 배정, 실시간 알림
-- 외부 LLM 기반 AI 익명화
+- 외부 LLM 기반 익명화는 필요성과 보안 검토 후 판단
 - 센터 공유, 개선 요청서/Notion 전송
 - 운영 DB 실연결과 migration
 - 권한 정책 세분화와 관리자 UI 고도화
@@ -188,4 +188,4 @@ VITE_API_MODE=http VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --hos
 | 5 | 미설정 공공데이터 endpoint 보강 | 후보 dataset 중 실제 호출 가능한 항목 확대 |
 | 6 | 운영 DB/권한별 인가 | 실제 서비스 전 데이터 영속화와 민감정보 접근 제어 강화 |
 
-PDF 생성, 파일 업로드/다운로드, 공공데이터 전체 페이지 수집 endpoint는 Spring Boot MVP에 포함했습니다. 실제 외부 LLM 기반 AI 익명화, 운영 DB 전환, 권한별 인가 고도화는 2차 이후로 유지합니다.
+PDF 생성, 파일 업로드/다운로드, 공공데이터 전체 페이지 수집 endpoint는 Spring Boot MVP에 포함했습니다. 실제 외부 LLM 기반 익명화, 운영 DB 전환, 권한별 인가 고도화는 2차 이후로 유지합니다.

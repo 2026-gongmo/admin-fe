@@ -98,7 +98,7 @@ VITE_API_MODE=http VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --hos
 
 ## 아직 Mock이거나 추가 예정인 영역
 
-- 외부 LLM 기반 AI 익명화
+- 외부 LLM 기반 익명화는 필요성과 보안 검토 후 판단
 - 제보/도움 요청 상세 패널의 단건 API 재조회와 고급 수정
 - 공유/공문/Notion 전송
 - 중복 제보 병합 저장
@@ -110,7 +110,7 @@ VITE_API_MODE=http VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --hos
 2. 첨부파일 확장자/MIME/용량 검증 고도화
 3. 미설정 공공데이터 dataset endpoint 공식 명세 확인
 4. 운영 DB 전환 전 Flyway/권한/백업 정책 점검
-5. 실제 AI 익명화 API 연결 전 보안 리뷰
+5. 실제 LLM 기반 익명화 API 연결 전 필요성/보안 리뷰
 
 ## GitHub 업로드 전 확인
 
