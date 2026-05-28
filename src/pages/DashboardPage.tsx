@@ -102,7 +102,7 @@ export const DashboardPage: React.FC = () => {
       <main className="page">
         <div className="page-h">
           <div>
-            <h1>ONDA 관리자 대시보드</h1>
+            <h1>베프 관리자 대시보드</h1>
             <div className="sub">
               {periodLabel(period)} · {getModeLabel()} 기준 ·{" "}
               {isHttpMode() ? "주요 API 연결됨" : "API 연동 예정"}

@@ -1,5 +1,5 @@
 // ============================================================
-// ONDA 공통 Mock 데이터
+// 베프 공통 Mock 데이터
 // - 모바일/웹이 동일한 도메인 데이터를 공유합니다.
 // - 백엔드 연동 시 services/api.ts 만 교체하면 됩니다.
 // ============================================================
@@ -418,7 +418,7 @@ export const publicDataSources: PublicDataSource[] = [
     name: "대학알리미 교육여건 현황",
     provider: "한국대학교육협의회",
     category: "대학",
-    useCase: "대학별 시설·교육여건 지표와 ONDA 제보량 비교",
+    useCase: "대학별 시설·교육여건 지표와 베프 제보량 비교",
     status: "연동 가능",
     updateCycle: "연 1회",
   },
@@ -468,7 +468,7 @@ export const publicDataComparisons: PublicDataComparison[] = [
     fieldReport: "식당 키오스크 높이 문제 25건",
     coverage: "missing",
     risk: "mid",
-    action: "키오스크 접근성 항목을 ONDA 현장 제보 데이터로 보완",
+    action: "키오스크 접근성 항목을 베프 현장 제보 데이터로 보완",
   },
   {
     id: "cmp_3",

@@ -305,7 +305,7 @@ export const SettingsPage: React.FC = () => {
             <div className="settings-list">
               <div>
                 <span>학교명</span>
-                <b>ONDA 대학교</b>
+                <b>베프 대학교</b>
               </div>
               <div>
                 <span>관리 조직</span>

@@ -146,7 +146,7 @@ function ProtectedAdminApp() {
   if (isLoading) {
     return (
       <div className="app-loading">
-        <b>ONDA 관리자 웹을 준비하는 중입니다</b>
+        <b>베프 관리자 웹을 준비하는 중입니다</b>
         <span>세션과 API 모드를 확인하고 있습니다.</span>
       </div>
     );

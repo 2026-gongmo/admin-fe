@@ -41,7 +41,7 @@ export const Sidebar: React.FC = () => {
       <div className="sb-brand">
         <div className="lm"></div>
         <div className="name">
-          ONDA<small>ADMIN</small>
+          베프<small>ADMIN</small>
         </div>
       </div>
 

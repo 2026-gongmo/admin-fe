@@ -214,7 +214,7 @@ export const PublicDataPage: React.FC = () => {
           <div>
             <h1>공공데이터 비교</h1>
             <div className="sub">
-              공공데이터는 초기 지도 레이어로 쓰고, 실제 이용 가능성은 ONDA 제보로 보완합니다.
+              공공데이터는 초기 지도 레이어로 쓰고, 실제 이용 가능성은 베프 제보로 보완합니다.
             </div>
           </div>
           <div className="row-flex">
@@ -347,7 +347,7 @@ export const PublicDataPage: React.FC = () => {
           <div className="layer-map-wrap">
             <div className="public-layer-map" aria-label="공공데이터 지도 레이어 미리보기">
               <div className="layer-campus-core">
-                <b>ONDA 캠퍼스</b>
+                <b>베프 캠퍼스</b>
                 <span>현장 제보 + 공공데이터 후보 레이어</span>
               </div>
               {layerPoints.map((point) => (
@@ -553,7 +553,7 @@ export const PublicDataPage: React.FC = () => {
               <tr>
                 <th>건물</th>
                 <th>공공데이터 기록</th>
-                <th>ONDA 현장 제보</th>
+                <th>베프 현장 제보</th>
                 <th style={{ width: 130 }}>판정</th>
                 <th style={{ width: 70 }}>위험</th>
                 <th>관리자 조치</th>

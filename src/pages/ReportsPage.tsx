@@ -685,7 +685,7 @@ export const ReportsPage: React.FC = () => {
                         <b>{selectedComparison.publicRecord}</b>
                       </div>
                       <div className="public-link-row">
-                        <span>ONDA 현장 제보</span>
+                        <span>베프 현장 제보</span>
                         <b>{selectedComparison.fieldReport}</b>
                       </div>
                       <div className="public-link-row">

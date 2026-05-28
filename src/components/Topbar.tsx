@@ -81,7 +81,7 @@ export const Topbar: React.FC<Props> = ({
   return (
     <div className="topbar">
       <div className="school">
-        <span className="dot"></span>{admin?.campusName ?? "ONDA 대학교"}
+        <span className="dot"></span>{admin?.campusName ?? "베프 대학교"}
       </div>
       <div className={isHttpMode() ? "api-pill" : "mock-pill"} title={getApiBaseUrl()}>
         {getModeLabel()}

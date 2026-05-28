@@ -1,5 +1,5 @@
 export const CAMPUS_PROFILE = {
-  name: import.meta.env.VITE_CAMPUS_NAME || "ONDA 대학교 데모 캠퍼스",
+  name: (import.meta.env.VITE_CAMPUS_NAME || "베프 대학교 데모 캠퍼스").replace(/O[N]DA/g, "베프"),
   center: {
     lat: Number(import.meta.env.VITE_CAMPUS_CENTER_LAT || 37.58745),
     lng: Number(import.meta.env.VITE_CAMPUS_CENTER_LNG || 127.05935),

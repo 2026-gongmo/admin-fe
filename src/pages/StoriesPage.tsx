@@ -387,7 +387,7 @@ function storyHistory(story: Story): ActionTimelineItem[] {
     },
     {
       time: "AI 검수",
-      actor: "ONDA AI",
+      actor: "베프 AI",
       action:
         story.aiReview?.anonymized === "완료"
           ? "익명화 완료"

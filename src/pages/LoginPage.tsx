@@ -31,7 +31,7 @@ export const LoginPage: React.FC = () => {
   return (
     <main className="login-page">
       <section className="login-hero">
-        <div className="login-mark">ONDA</div>
+        <div className="login-mark">베프</div>
         <h1>관리자 웹 로그인</h1>
         <p>
           접근성 제보, 도움 요청, 경험 피드 검수 데이터를 학교 개선 업무로 전환하는

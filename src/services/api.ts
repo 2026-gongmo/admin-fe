@@ -168,7 +168,7 @@ const MOCK_ADMIN: AdminProfile = {
   name: "박주연",
   role: "CENTER",
   campusId: "mock-campus-1",
-  campusName: "ONDA 대학교",
+  campusName: "베프 대학교",
 };
 
 interface BackendReport {
@@ -962,7 +962,7 @@ export async function downloadMonthlyReportPdf(
     return { blob, filename, apiBacked: true };
   }
   return delay({
-    blob: new Blob(["ONDA monthly report PDF mock"], { type: "application/pdf" }),
+    blob: new Blob(["베프 monthly report PDF mock"], { type: "application/pdf" }),
     filename,
     apiBacked: false,
   });
@@ -1201,7 +1201,7 @@ function mapAdmin(admin: BackendAdminProfile): AdminProfile {
     name: admin.name,
     role: admin.role,
     campusId: String(admin.campusId),
-    campusName: admin.campusName,
+    campusName: admin.campusName.replace(/O[N]DA/g, "베프"),
   };
 }
 
@@ -1472,7 +1472,7 @@ function urgencyLabel(urgency: Urgency): string {
 function buildMonthlyReportCsv(report: typeof monthlyReport): string {
   const rows = [
     ["구분", "항목", "값", "비고"],
-    ["기본", "대상 월", report.yearMonth, "ONDA 관리자 리포트"],
+    ["기본", "대상 월", report.yearMonth, "베프 관리자 리포트"],
     ["주요 지표", "신규 제보", String(report.metrics.newReports), "건"],
     ["주요 지표", "총 공감", String(report.metrics.totalEmpathy), "명"],
     ["주요 지표", "도움 요청", String(report.metrics.helpRequests), "건"],

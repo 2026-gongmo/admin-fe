@@ -169,9 +169,9 @@ export const MonthlyReportPage: React.FC = () => {
       <main className="page" style={{ background: "#F1F5F9" }}>
         <div className="page-h">
           <div>
-            <h1>{report.yearMonth} ONDA 접근성 리포트</h1>
+            <h1>{report.yearMonth} 베프 접근성 리포트</h1>
             <div className="sub">
-              장애학생지원센터 · 박주연 발행 · 문서 번호 #ONDA-RPT-2605
+              장애학생지원센터 · 박주연 발행 · 문서 번호 #베프-RPT-2605
             </div>
           </div>
           <div className="row-flex">

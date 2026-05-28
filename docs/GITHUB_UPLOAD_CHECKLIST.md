@@ -1,4 +1,4 @@
-# ONDA GitHub 업로드 체크리스트
+# 베프 GitHub 업로드 체크리스트
 
 ## 현재 repo 상태
 

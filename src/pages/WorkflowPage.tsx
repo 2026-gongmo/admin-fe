@@ -489,7 +489,7 @@ function workflowHistory(task: ImprovementTask): ActionTimelineItem[] {
   const items: ActionTimelineItem[] = [
     {
       time: "제보 집계",
-      actor: "ONDA",
+      actor: "베프",
       action: "개선 과제 생성",
       note: `${task.evidence} 근거로 개선 과제 후보가 생성되었습니다.`,
     },

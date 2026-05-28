@@ -166,7 +166,7 @@ function osmPinPosition(building: Building) {
 const osmTiles = buildOsmTiles();
 
 const OsmFallbackMap: React.FC<{ buildings: Building[]; note: string }> = ({ buildings, note }) => (
-  <div className="osm-map" aria-label="ONDA 캠퍼스 제보 지도 대체 표시">
+  <div className="osm-map" aria-label="베프 캠퍼스 제보 지도 대체 표시">
     {osmTiles.map((tile) => (
       <img
         alt=""
@@ -261,7 +261,7 @@ export const CampusMap: React.FC<{ buildings: Building[] }> = ({ buildings }) =>
 
   return (
     <div className="campus-map-shell">
-      {appKey && <div className="campus-map" ref={mapRef} aria-label="ONDA 캠퍼스 제보 지도" />}
+      {appKey && <div className="campus-map" ref={mapRef} aria-label="베프 캠퍼스 제보 지도" />}
 
       {status === "missing-key" && (
         <OsmFallbackMap
