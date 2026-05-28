@@ -29,6 +29,23 @@ export interface AdminProfile {
   campusName: string;
 }
 
+export interface AdminRolePolicy {
+  role: AdminRole;
+  label: string;
+  access: string;
+  limit: string;
+  menuKeys: string[];
+  apiScopes: string[];
+}
+
+export interface AdminPermissionPolicy {
+  currentRole: AdminRole;
+  currentRoleLabel: string;
+  enforcement: string;
+  policies: AdminRolePolicy[];
+  enforcedEndpoints: string[];
+}
+
 export interface LoginResult {
   accessToken: string;
   tokenType: "Bearer";

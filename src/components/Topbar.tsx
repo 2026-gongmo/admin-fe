@@ -65,7 +65,12 @@ export const Topbar: React.FC<Props> = ({
 
   const changeRole = (role: AdminRolePreview) => {
     setRolePreview(role);
-    showToast(`${roleLabel(role)} 권한 미리보기입니다. 실제 인가는 아직 구현 안 됨 · 추가 예정.`, "warning");
+    showToast(
+      isHttpMode()
+        ? `${roleLabel(role)} 화면 미리보기입니다. 제한 API는 로그인 계정의 Spring Security 권한으로 검증됩니다.`
+        : `${roleLabel(role)} 권한 미리보기입니다. HTTP 모드에서 백엔드 권한 정책과 연결됩니다.`,
+      isHttpMode() ? "success" : "warning"
+    );
   };
 
   const onLogout = async () => {

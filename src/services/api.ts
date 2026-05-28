@@ -29,6 +29,7 @@ export { ApiError } from "./apiTypes";
 export type { ApiResponse, ApiFailure, ApiSuccess } from "./apiTypes";
 import type {
   AdminProfile,
+  AdminPermissionPolicy,
   Building,
   Story,
   HelpRequest,
@@ -445,6 +446,23 @@ interface BackendLoginResult {
   admin: BackendAdminProfile;
 }
 
+interface BackendAdminRolePolicy {
+  role: AdminProfile["role"];
+  label: string;
+  access: string;
+  limit: string;
+  menuKeys: string[];
+  apiScopes: string[];
+}
+
+interface BackendAdminPermissionPolicy {
+  currentRole: AdminProfile["role"];
+  currentRoleLabel: string;
+  enforcement: string;
+  policies: BackendAdminRolePolicy[];
+  enforcedEndpoints: string[];
+}
+
 export function isHttpMode(): boolean {
   return getApiMode() === "http";
 }
@@ -487,6 +505,44 @@ export async function getCurrentAdmin(): Promise<AdminProfile> {
   const mapped = mapAdmin(admin);
   setStoredAdmin(mapped);
   return mapped;
+}
+
+export async function getAdminPermissionPolicies(): Promise<AdminPermissionPolicy> {
+  if (isHttpMode()) {
+    return httpRequest<BackendAdminPermissionPolicy>("/api/admin/permissions/policies");
+  }
+  return delay({
+    currentRole: MOCK_ADMIN.role,
+    currentRoleLabel: "장애학생지원센터",
+    enforcement: "Mock 모드에서는 화면 미리보기만 제공하고, HTTP 모드에서는 Spring Security 역할 제한을 적용합니다.",
+    policies: [
+      {
+        role: "CENTER",
+        label: "장애학생지원센터",
+        access: "제보 확인, 도움 요청 처리, 경험 피드 검수, 리포트 확인",
+        limit: "시설 예산 확정, 전체 관리자 권한 변경 불가",
+        menuKeys: ["dashboard", "reports", "help-requests", "stories", "workflow", "monthly-report", "settings"],
+        apiScopes: ["reports:read/write", "help-requests:read/write", "stories:review", "monthly-report:export", "audit-logs:read"],
+      },
+      {
+        role: "FACILITY",
+        label: "시설관리팀",
+        access: "시설 제보 확인, 조치 상태 변경, 개선 일정 입력, 첨부파일 확인",
+        limit: "경험 피드 원문, 감사 로그, 월간 리포트 공식 내보내기 접근 제한",
+        menuKeys: ["dashboard", "reports", "workflow", "settings"],
+        apiScopes: ["reports:read/write", "attachments:read/write", "workflow:read/write"],
+      },
+      {
+        role: "SUPER_ADMIN",
+        label: "슈퍼관리자",
+        access: "전체 메뉴, 역할 정책 확인, API 연동 설정, 감사 로그 조회",
+        limit: "운영 로그와 개인정보 접근 사유 기록 필요",
+        menuKeys: ["dashboard", "reports", "public-data", "analysis", "help-requests", "stories", "workflow", "monthly-report", "settings"],
+        apiScopes: ["all:read/write", "audit-logs:read", "public-data:sync"],
+      },
+    ],
+    enforcedEndpoints: [],
+  });
 }
 
 export async function logoutAdmin(): Promise<void> {

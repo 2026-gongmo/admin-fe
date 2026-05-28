@@ -4,6 +4,7 @@ import { ToastContext } from "../App";
 import {
   getModeLabel,
   getMockApiFailureScope,
+  getAdminPermissionPolicies,
   getAuditLogs,
   downloadAuditLogsCsv,
   isHttpMode,
@@ -11,22 +12,32 @@ import {
   type MockApiFailureScope,
 } from "../services/api";
 import { getApiBaseUrl } from "../services/httpClient";
+import type { AdminPermissionPolicy, AdminRole, AdminRolePolicy } from "../types";
 
-const ROLE_POLICIES = [
+const DEFAULT_ROLE_POLICIES: AdminRolePolicy[] = [
   {
-    role: "장애학생지원센터",
+    role: "CENTER",
+    label: "장애학생지원센터",
     access: "제보 확인, 도움 요청 처리, 경험 피드 검수",
     limit: "시설 예산 확정, 전체 관리자 권한 변경 불가",
+    menuKeys: ["dashboard", "reports", "help-requests", "stories", "workflow", "monthly-report", "settings"],
+    apiScopes: ["reports:read/write", "help-requests:read/write", "stories:review", "monthly-report:export", "audit-logs:read"],
   },
   {
-    role: "시설관리팀",
+    role: "FACILITY",
+    label: "시설관리팀",
     access: "시설 제보 확인, 조치 상태 변경, 개선 일정 입력",
     limit: "경험 피드 원문과 민감정보 검수 화면 접근 제한",
+    menuKeys: ["dashboard", "reports", "workflow", "settings"],
+    apiScopes: ["reports:read/write", "attachments:read/write", "workflow:read/write"],
   },
   {
-    role: "슈퍼관리자",
+    role: "SUPER_ADMIN",
+    label: "슈퍼관리자",
     access: "전체 메뉴, 역할 정책, API 연동 설정",
     limit: "운영 로그와 개인정보 접근 사유 기록 필요",
+    menuKeys: ["dashboard", "reports", "public-data", "analysis", "help-requests", "stories", "workflow", "monthly-report", "settings"],
+    apiScopes: ["all:read/write", "audit-logs:read", "public-data:sync"],
   },
 ];
 
@@ -196,12 +207,19 @@ function featureStatusClass(status: string) {
 
 export const SettingsPage: React.FC = () => {
   const { showToast } = useContext(ToastContext);
-  const [previewRole, setPreviewRole] = useState(ROLE_POLICIES[0].role);
+  const [permissionPolicy, setPermissionPolicy] = useState<AdminPermissionPolicy>({
+    currentRole: "CENTER",
+    currentRoleLabel: "장애학생지원센터",
+    enforcement: "HTTP 모드에서는 Spring Security 역할 제한을 적용합니다.",
+    policies: DEFAULT_ROLE_POLICIES,
+    enforcedEndpoints: [],
+  });
+  const [previewRole, setPreviewRole] = useState<AdminRole>("CENTER");
   const [failureScope, setFailureScope] = useState<MockApiFailureScope>(
     getMockApiFailureScope()
   );
   const [auditLogs, setAuditLogs] = useState<string[]>(ACTIVITY_LOGS);
-  const currentPolicy = ROLE_POLICIES.find((item) => item.role === previewRole) ?? ROLE_POLICIES[0];
+  const currentPolicy = permissionPolicy.policies.find((item) => item.role === previewRole) ?? permissionPolicy.policies[0];
 
   const changeFailureScope = (scope: MockApiFailureScope) => {
     setMockApiFailureScope(scope);
@@ -215,6 +233,17 @@ export const SettingsPage: React.FC = () => {
   };
 
   useEffect(() => {
+    getAdminPermissionPolicies()
+      .then((policy) => {
+        setPermissionPolicy(policy);
+        setPreviewRole(policy.currentRole);
+      })
+      .catch(() => {
+        if (isHttpMode()) {
+          showToast("권한 정책 API를 불러오지 못해 기본 정책표를 표시합니다.", "warning");
+        }
+      });
+
     getAuditLogs()
       .then((logs) => {
         if (logs.length > 0) {
@@ -488,26 +517,33 @@ export const SettingsPage: React.FC = () => {
           <div className="panel">
             <div className="panel-h">
               <h3>역할별 접근 정책</h3>
-              <span className="mock-pill">Mock 권한표</span>
+              <span className={isHttpMode() ? "status done" : "mock-pill"}>
+                {isHttpMode() ? "API 권한 정책 연결" : "Mock 권한표"}
+              </span>
             </div>
             <div className="seg-control" style={{ marginBottom: 12 }}>
-              {ROLE_POLICIES.map((item) => (
+              {permissionPolicy.policies.map((item) => (
                 <button
                   key={item.role}
                   className={previewRole === item.role ? "on" : ""}
                   onClick={() => {
                     setPreviewRole(item.role);
-                  showToast(`${item.role} 권한 미리보기입니다. 실제 인가는 아직 구현 안 됨 · 추가 예정입니다.`, "warning");
+                    showToast(
+                      isHttpMode()
+                        ? `${item.label} 정책입니다. 제한 API는 Spring Security 역할 검증으로 막힙니다.`
+                        : `${item.label} 권한 미리보기입니다. HTTP 모드에서 실제 API 인가와 연결됩니다.`,
+                      isHttpMode() ? "success" : "warning"
+                    );
                   }}
                 >
-                  {item.role}
+                  {item.label}
                 </button>
               ))}
             </div>
             <div className="role-preview-card">
               <div>
-                <span className="field-l">현재 미리보기 역할</span>
-                <b>{currentPolicy.role}</b>
+                <span className="field-l">현재 API 역할</span>
+                <b>{permissionPolicy.currentRoleLabel}</b>
               </div>
               <div>
                 <span className="field-l">허용</span>
@@ -519,25 +555,31 @@ export const SettingsPage: React.FC = () => {
               </div>
             </div>
             <div className="role-grid">
-              {ROLE_POLICIES.map((item) => (
+              {permissionPolicy.policies.map((item) => (
                 <div className="role-card" key={item.role}>
-                  <div className="role-name">{item.role}</div>
+                  <div className="role-name">{item.label}</div>
                   <div className="field-l">허용 메뉴</div>
                   <div className="role-text">{item.access}</div>
+                  <div className="field-l mt-10">API 범위</div>
+                  <div className="role-text">{item.apiScopes.join(", ")}</div>
                   <div className="field-l mt-10">제한</div>
                   <div className="role-text">{item.limit}</div>
                 </div>
               ))}
             </div>
             <div className="small-muted mt-10">
-              실제 메뉴 제한과 API 인가는 Spring Security/JWT 권한 검증으로 연결해야 합니다.
+              {isHttpMode()
+                ? `${permissionPolicy.enforcement} 제한 endpoint ${permissionPolicy.enforcedEndpoints.length}개를 백엔드 정책 API에서 불러왔습니다.`
+                : "Mock 모드에서는 화면 미리보기만 제공하고, HTTP 모드에서 Spring Security 권한 정책을 불러옵니다."}
             </div>
           </div>
 
           <div className="panel">
             <div className="panel-h">
               <h3>권한 제한 액션 샘플</h3>
-              <span className="planned-pill">아직 구현 안 됨 · 추가 예정</span>
+              <span className={isHttpMode() ? "status done" : "planned-pill"}>
+                {isHttpMode() ? "API 인가 제한 적용" : "아직 구현 안 됨 · 추가 예정"}
+              </span>
             </div>
             <div className="locked-action-list">
               {LOCKED_ACTIONS.map((item) => (
@@ -549,13 +591,18 @@ export const SettingsPage: React.FC = () => {
                   <button
                     className="h-btn"
                     disabled
-                    title="실제 권한 검사는 아직 구현 안 됨 · 추가 예정"
+                    title={isHttpMode() ? "백엔드 Spring Security 권한 정책에 따라 제한됩니다." : "HTTP 모드에서 실제 권한 검사와 연결됩니다."}
                   >
                     권한 필요
                   </button>
                 </div>
               ))}
             </div>
+            {isHttpMode() && (
+              <div className="small-muted mt-10">
+                실제 제한: {permissionPolicy.enforcedEndpoints.slice(0, 3).join(" · ")}
+              </div>
+            )}
           </div>
 
           <div className="panel">

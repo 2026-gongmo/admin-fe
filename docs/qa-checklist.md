@@ -109,7 +109,8 @@ VITE_API_MODE=http VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --hos
 - [ ] `docs/screenshots/workflow.png`
 - [ ] `docs/screenshots/stories-search.png`
 - [ ] `docs/screenshots/monthly-report.png`
-- [ ] `docs/screenshots/settings-api-failure.png`
+- [ ] `docs/screenshots/public-data.png`
+- [ ] `docs/screenshots/settings-permissions.png`
 - [ ] `docs/screenshots/demo-guide.png`
 - [ ] 캡처 전 Mock API 실패 범위가 `정상` 상태인가?
 - [ ] 캡처 파일에 실제 개인정보, API Key, Token, 학교 내부자료가 보이지 않는가?

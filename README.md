@@ -12,7 +12,7 @@ ONDA 관리자 웹은 장애대학생의 접근성 제보, 도움 요청, 경험
 | 구현 범위 | React + Vite 프론트엔드 |
 | 데이터 | 기본은 `src/data/mockData.ts` Mock 데이터, HTTP 모드는 Spring Boot API |
 | API 계층 | `src/services/api.ts`에서 Mock/API 모드 분기 |
-| 백엔드 | Spring Boot API 주요 조회/저장 기능 연결 가능 |
+| 백엔드 | Spring Boot API 주요 조회/저장/다운로드/권한 정책 기능 연결 가능 |
 | 배포/시연 | 프론트는 로컬 또는 정적 호스팅 가능, 백엔드는 별도 Java 서버 필요 |
 
 ## 제출용 요약
@@ -29,9 +29,9 @@ ONDA 관리자 웹은 장애대학생의 접근성 제보, 도움 요청, 경험
 
 | 구분 | 내용 |
 |---|---|
-| 실제 API 연결 | 로그인, 내 정보, KPI, 제보 처리, 도움 요청, 경험 피드, 워크플로우, 리포트 PDF/CSV, 공공데이터 수집/원본/정규화, 감사 로그 |
+| 실제 API 연결 | 로그인, 내 정보, KPI, 제보 처리, 도움 요청, 경험 피드, 워크플로우, 리포트 PDF/CSV, 공공데이터 수집/원본/정규화, 권한 정책, 감사 로그 |
 | Mock 또는 규칙 기반 | 발표 모드, 일부 안내 Toast, 특정 가능성 방지용 규칙 기반 익명화/관리자 검토용 추천 |
-| 추가 예정 | 실제 외부 LLM, 운영 DB 전환, 권한별 API 인가 고도화, 외부 기관 자동 전송, 실시간 알림 |
+| 추가 예정 | 실제 외부 LLM, 운영 DB 전환, 메뉴/버튼 단위 권한 고도화, 외부 기관 자동 전송, 실시간 알림 |
 
 ## 기술 스택
 
@@ -85,7 +85,7 @@ ONDA의 학생 앱이 장애학생의 경험과 제보를 모으는 서비스라
 | React + Vite | 공모전 MVP에서 빠르게 화면을 만들고 정적 배포하기 좋습니다. |
 | TypeScript | 제보/도움 요청/피드/워크플로우 타입을 명확히 나눠 백엔드 DTO와 맞추기 쉽습니다. |
 | HashRouter | 정적 호스팅 환경에서도 새로고침 라우팅 문제가 적어 시연 안정성이 좋습니다. |
-| Mock service layer | 백엔드 없이도 발표 가능한 화면을 만들고, 이후 `api.ts`만 교체해 API 연결이 가능합니다. |
+| Mock/API service layer | 백엔드 없이도 발표 가능한 화면을 유지하면서, HTTP 모드에서는 같은 함수 시그니처로 Spring Boot API를 호출합니다. |
 | CSS 기반 스타일 | 기존 디자인 톤을 유지하면서 과한 UI 프레임워크 의존성을 피했습니다. |
 
 ## 화면 미리보기
@@ -93,6 +93,10 @@ ONDA의 학생 앱이 장애학생의 경험과 제보를 모으는 서비스라
 | 대시보드 | 접근성 제보 상세 |
 |---|---|
 | ![dashboard](docs/screenshots/dashboard.png) | ![reports](docs/screenshots/reports-selected.png) |
+
+| 공공데이터 참고 레이어 | 권한 정책 설정 |
+|---|---|
+| ![public data](docs/screenshots/public-data.png) | ![settings](docs/screenshots/settings-permissions.png) |
 
 | 도움 요청 | 개선 워크플로우 |
 |---|---|
@@ -102,9 +106,9 @@ ONDA의 학생 앱이 장애학생의 경험과 제보를 모으는 서비스라
 |---|---|
 | ![stories](docs/screenshots/stories-search.png) | ![monthly report](docs/screenshots/monthly-report.png) |
 
-| 시연 가이드 | 설정/API 실패 시뮬레이션 |
+| 시연 가이드 | 월간 리포트 |
 |---|---|
-| ![demo guide](docs/screenshots/demo-guide.png) | ![settings](docs/screenshots/settings-api-failure.png) |
+| ![demo guide](docs/screenshots/demo-guide.png) | ![monthly report](docs/screenshots/monthly-report.png) |
 
 ## 주요 화면
 
@@ -171,7 +175,8 @@ VITE_DEMO_ADMIN_PASSWORD=onda1234!
 - 위험 작업 전 `ConfirmModal`을 표시해 운영 화면의 실수 방지 흐름을 반영했습니다.
 - `PageState`, `OperationalStatus`, Toast tone을 통해 로딩/빈 상태/Mock 동기화/성공·경고·에러 알림을 준비했습니다.
 - `ApiFailureBanner`, `ApiError`, Mock API 실패 시뮬레이션을 통해 조회 실패와 저장 실패 UI를 백엔드 연결 전에도 확인할 수 있습니다.
-- 설정 화면에서 역할별 권한 미리보기와 권한 제한 액션 샘플을 제공하되, 실제 인가는 `아직 구현 안 됨 · 추가 예정`으로 명확히 표시했습니다.
+- 설정 화면은 HTTP 모드에서 `GET /api/admin/permissions/policies`를 호출해 역할별 정책과 제한 API 목록을 표시합니다.
+- 상단 권한 선택은 화면 미리보기이며, 제한 API는 로그인 계정의 Spring Security 권한으로 검증됩니다.
 - 접근성 제보, 도움 요청, 개선 워크플로우 상세 패널은 닫기/고정과 URL 직접 진입을 지원해 발표 중 특정 사례를 바로 보여줄 수 있습니다.
 - 상단 권한 미리보기와 발표 모드 토글을 추가해 센터/시설팀/슈퍼관리자 관점과 시연 전용 화면 정리를 빠르게 전환할 수 있습니다.
 
@@ -184,7 +189,7 @@ VITE_DEMO_ADMIN_PASSWORD=onda1234!
 5. `#/stories`에서 특정 가능성 방지용 익명화/검수 상태와 원문/공개본 비교를 보여줍니다.
 6. `#/workflow`에서 제보가 개선 과제로 넘어가는 운영 흐름을 보여줍니다.
 7. `#/monthly-report`에서 건물별 리포트와 시설팀 제출용 요약을 보여줍니다.
-8. `#/settings`에서 어떤 기능이 Mock이고 어떤 기능이 아직 구현 안 됨 · 추가 예정인지 설명합니다.
+8. `#/settings`에서 실제 API 연결, 권한 정책, 아직 추가 예정인 운영 기능을 구분해 설명합니다.
 9. `#/demo-guide`에서 발표 멘트와 평가 항목 매핑을 확인합니다.
 
 ## 구현 상태와 추가 예정
@@ -192,7 +197,7 @@ VITE_DEMO_ADMIN_PASSWORD=onda1234!
 | 기능 | 현재 상태 | 실제 서비스에서 필요한 작업 |
 |---|---|---|
 | 관리자 로그인 | Mock 또는 Spring Boot seed 로그인 | 운영 토큰 만료/재발급 정책 강화 |
-| 역할별 권한 | Mock 정책표 | API 인가, 메뉴 접근 제어 |
+| 역할별 권한 | Spring Security 일부 API 인가 + 권한 정책 조회 API, 화면 미리보기 | 메뉴/버튼 단위 접근 제어 고도화 |
 | 접근성 제보 목록 | Mock 또는 `GET /api/admin/reports` | 상세/등록/삭제 등 CRUD 확장 |
 | 제보 상태 변경 | Mock 또는 `PATCH /api/admin/reports/{id}/status` | 상태 사유/부서 정책 고도화 |
 | 담당자/우선순위 변경 | Mock 또는 `PATCH /api/admin/reports/{id}/assignee`, `/priority` | 담당자 목록/권한 검증 고도화 |
@@ -202,7 +207,7 @@ VITE_DEMO_ADMIN_PASSWORD=onda1234!
 | 도움 요청 상태 변경 | Mock 또는 `PATCH /api/admin/help-requests/{id}/status`, `/decision` | 응답자 배정/실시간 알림 고도화 |
 | 경험 피드 | Mock 또는 `GET /api/admin/stories`, 공개 상태 변경 API | 원문/공개본 분리 저장, 신고/검수 API 고도화 |
 | 익명화 | 규칙 기반 Spring Boot 익명화 API | 소수자 특정 가능성 기준 고도화, 외부 LLM API 호출 전 보안 리뷰 |
-| 공공데이터 참고 | seed API, 샘플/전체 페이지 수집 endpoint, 정규화 요약 API | 핵심 판단 근거가 아닌 보조 레이어로 유지, 원천별 필드 검증 |
+| 공공데이터 참고 | 70개 후보 seed, 68개 동기화 슬롯, 3개 실제 호출 설정, 원본/정규화/상태 API | 핵심 판단 근거가 아닌 보조 레이어로 유지, 미설정 endpoint 보강 |
 | 개선 워크플로우 | Mock 또는 `GET /api/admin/improvement-tasks`, 단계 변경 API | 공문/부서 회신/기한 관리 고도화 |
 | 월간 리포트 | Mock 또는 `GET /api/admin/monthly-report`, PDF/CSV 다운로드 API | 공문 발송과 공유 자동화 |
 | 감사 로그 | Spring Boot 조회/CSV 내보내기 API | 검색/기간 필터 고도화 |
@@ -233,10 +238,10 @@ Spring Boot API -> src/services/httpClient.ts -> src/services/api.ts -> src/page
 | 상태 변경 | 프론트 메모리 업데이트 | 일부 `PATCH` 요청 후 응답 반영 완료 |
 | 실패 처리 | Mock API 실패 시뮬레이션 | 실제 HTTP 에러를 `ApiError`로 변환 |
 | 검색/필터 | URL query + Mock 필터 | URL query + 서버 query parameter |
-| 권한 | UI 미리보기 | Spring Security 인가 + 메뉴/버튼 제한 |
+| 권한 | 화면 미리보기 + Spring Security 제한 API + 권한 정책 API | 메뉴/버튼 단위 제한 고도화 |
 | 감사 로그 | Mock timeline | DB 저장 감사 로그 |
 
-현재 연결 범위는 로그인, 내 정보, 대시보드 KPI, 건물 목록, 접근성 제보 목록/상태/담당자/우선순위/메모/첨부파일, 도움 요청 목록/상태/센터 판단, 경험 피드 목록/공개 상태/규칙 기반 익명화, 개선 워크플로우 목록/단계, 월간 리포트 조회, 월간 리포트 PDF/CSV 다운로드와 스냅샷, 공공데이터 seed 조회와 샘플/전체 페이지 수집 endpoint, 수집 결과 상세 표, endpoint 설정 현황, 원본 데이터 상세 조회, 정규화 미리보기, 공공데이터 지도 레이어, 반복 문제 분석/관리자 검토용 추천, 감사 로그 조회/CSV 내보내기입니다. 외부 LLM API, 운영 DB 실연결, 공문/외부 공유 자동 전송은 승인과 별도 보안 검토가 필요합니다.
+현재 연결 범위는 로그인, 내 정보, 대시보드 KPI, 건물 목록, 접근성 제보 목록/상태/담당자/우선순위/메모/첨부파일, 도움 요청 목록/상태/센터 판단, 경험 피드 목록/공개 상태/규칙 기반 익명화, 개선 워크플로우 목록/단계, 월간 리포트 조회, 월간 리포트 PDF/CSV 다운로드와 스냅샷, 공공데이터 seed 조회와 샘플/전체 페이지 수집 endpoint, 수집 결과 상세 표, endpoint 설정 현황, 원본 데이터 상세 조회, 정규화 미리보기, 공공데이터 지도 레이어, 권한 정책 조회, 제한 API 인가, 반복 문제 분석/관리자 검토용 추천, 감사 로그 조회/CSV 내보내기입니다. 외부 LLM API, 운영 DB 실연결, 공문/외부 공유 자동 전송은 승인과 별도 보안 검토가 필요합니다.
 
 ## 배포 주의
 
@@ -250,10 +255,10 @@ Spring Boot API -> src/services/httpClient.ts -> src/services/api.ts -> src/page
 | 구분 | 현재 한계 | 다음 개선 |
 |---|---|---|
 | 데이터 | 주요 화면은 Spring Boot API 연결 가능, 기본 실행은 Mock | 운영 DB 전환과 서버 페이징 |
-| 인증/인가 | seed 관리자 로그인 + 역할 미리보기 | JWT/세션 만료/재발급, API 인가 |
+| 인증/인가 | seed 관리자 로그인 + Spring Security 일부 API 인가 + 역할 미리보기 | JWT/세션 만료/재발급, 메뉴/버튼 단위 인가 |
 | 저장 | 주요 변경은 API 저장, 기본은 로컬 H2 파일 DB | 운영 DB 저장, 감사 로그 검색/필터 고도화 |
 | AI | 익명화/추천은 규칙 기반 MVP | 최종 판단이 아닌 추천/초안 보조로 유지, LLM API 연동 전 보안 리뷰 |
-| 공공데이터 | 70개 seed, 68개 동기화 슬롯, 일부 실제 API path 설정 기반 원본/정규화 조회 | 핵심 판단 근거가 아닌 참고 레이어로 유지, 미설정 endpoint 보강 |
+| 공공데이터 | 70개 후보 seed, 68개 동기화 슬롯, 3개 실제 호출 설정 기반 원본/정규화 조회 | 핵심 판단 근거가 아닌 참고 레이어로 유지, 미설정 endpoint 보강 |
 | 리포트 | PDF/CSV 다운로드 API와 스냅샷 저장 연결, 공유 버튼은 안내 Toast | 공문/외부 공유 자동화 |
 | 개인정보 | 실제 데이터 없음 | 장애 관련 민감정보, 위치정보 보관 정책 필요 |
 
@@ -314,11 +319,13 @@ Spring Boot API -> src/services/httpClient.ts -> src/services/api.ts -> src/page
 | 34차 | README 포트폴리오 관점, 역할, 문제 정의, 기술 선택 이유 정리 |
 | 35차 | 발표자료용 화면 캡처 최신화, 월간 리포트/설정 화면 캡처 추가 |
 | 36차 | 백엔드 연결 TODO/API 우선순위 최종 정리 |
+| 37차 | 권한 정책 API 연결, 감사 로그 CSV 오류 보강, README 화면 캡처 최신화 |
 
 ## 업로드 전 주의사항
 
 - `node_modules/`는 GitHub에 올리지 않습니다.
 - `dist/`는 별도 요청이 없으면 올리지 않습니다.
 - `.env`, API Key, Token, 개인정보는 포함하지 않습니다.
-- 현재 화면은 Mock 데이터 기반이며 실제 학교 시스템과 연동된 상태가 아닙니다.
-- README와 화면 문구에서 실제 API가 연결된 것처럼 표현하지 않습니다.
+- 기본 실행은 Mock 모드이고, HTTP 모드는 로컬 Spring Boot API 연결 기준입니다.
+- 실제 학교 시스템, 운영 DB, 외부 기관 시스템과 연동된 상태는 아닙니다.
+- README와 화면 문구에서 미설정 공공데이터 endpoint나 외부 LLM을 실제 연동처럼 표현하지 않습니다.

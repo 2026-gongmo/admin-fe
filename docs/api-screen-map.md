@@ -87,7 +87,7 @@ Mock 모드의 실패 시뮬레이션은 `window.localStorage`의 `onda_mock_api
 3. `POST /api/admin/reports/merge`
 4. 응답자 배정과 실시간 알림
 5. 미설정 공공데이터 dataset endpoint 공식 명세 확인
-6. 운영 DB 전환과 권한별 API 인가 고도화
+6. 운영 DB 전환과 메뉴/버튼 단위 권한 고도화
 
 ## 36차 백엔드 연결 메모
 
